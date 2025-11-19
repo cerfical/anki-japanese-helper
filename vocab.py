@@ -32,6 +32,7 @@ class AddVocabDialog(QDialog):
         self._meaning_edit = QTextEdit()
         self._meaning_edit.setPlaceholderText("Meaning")
         self._meaning_edit.setFixedHeight(self._meaning_edit.fontMetrics().lineSpacing() * 4)
+        self._meaning_edit.setTabChangesFocus(True)
         layout.addWidget(self._meaning_edit)
 
         hbox = QHBoxLayout()
