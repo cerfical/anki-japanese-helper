@@ -25,6 +25,18 @@ class AddVocabDialog(QDialog):
         hbox = QHBoxLayout()
         layout.addLayout(hbox)
 
+        self._word_edit = QLineEdit()
+        self._word_edit.setPlaceholderText("Vocab, e.g., 折[お]り紙[がみ]")
+        hbox.addWidget(self._word_edit)
+
+        self._meaning_edit = QTextEdit()
+        self._meaning_edit.setPlaceholderText("Meaning")
+        self._meaning_edit.setFixedHeight(self._meaning_edit.fontMetrics().lineSpacing() * 4)
+        layout.addWidget(self._meaning_edit)
+
+        hbox = QHBoxLayout()
+        layout.addLayout(hbox)
+
         self._create_kanji_check = QCheckBox()
         self._create_kanji_check.setText("Kanji Notes")
         self._create_kanji_check.setChecked(True)
@@ -34,18 +46,6 @@ class AddVocabDialog(QDialog):
         self._create_keyword_check.setText("Keyword Notes")
         self._create_keyword_check.setChecked(True)
         hbox.addWidget(self._create_keyword_check)
-
-        hbox = QHBoxLayout()
-        layout.addLayout(hbox)
-
-        self._word_edit = QLineEdit()
-        self._word_edit.setPlaceholderText("Vocab, e.g., 折[お]り紙[がみ]")
-        hbox.addWidget(self._word_edit)
-
-        self._meaning_edit = QTextEdit()
-        self._meaning_edit.setPlaceholderText("Meaning")
-        self._meaning_edit.setFixedHeight(self._meaning_edit.fontMetrics().lineSpacing() * 4)
-        layout.addWidget(self._meaning_edit)
 
         if vocab:
             self._create_kanji_check.setChecked(vocab.create_kanji)
@@ -60,6 +60,7 @@ class AddVocabDialog(QDialog):
         layout.addWidget(btns)
 
         self.setLayout(layout)
+        self._word_edit.setFocus()
 
     def getVocab(self) -> Vocab:
         word = self._word_edit.text().strip()

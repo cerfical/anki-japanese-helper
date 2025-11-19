@@ -42,6 +42,7 @@ class KeywordDialog(QDialog):
         layout.addWidget(btns)
 
         self.setLayout(layout)
+        self._keyword_edit.setFocus()
 
     def getKeyword(self) -> Keyword:
         return Keyword(self._keyword_edit.text().strip(), self._meaning_edit.text().strip())

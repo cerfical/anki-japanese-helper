@@ -159,6 +159,7 @@ class KanjiDialog(QDialog):
         layout.addWidget(btns)
 
         self.setLayout(layout)
+        self._kanji_edit.setFocus()
 
     def _loadKanjiSvg(self):
         kanji = self._kanji_edit.text().strip()
