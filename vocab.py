@@ -134,4 +134,4 @@ def openDialog(vocab: Vocab | None = None):
         kanji_set = set(map(lambda k: k[0], filter(lambda k: k[1], letters)))
 
         for k in kanji_set - all_kanji:
-            kanji.openDialog(kanji.Kanji(k, ",".join(all_kanji)))
+            kanji.openDialog(kanji.Kanji(k, ""))
