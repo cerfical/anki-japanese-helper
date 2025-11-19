@@ -111,9 +111,9 @@ def openDialog(vocab: Vocab | None = None):
     note[meaning_field] = "<br>".join(vocab.meaning)
 
     if anki.uploadNote(note, dst_deck, note_type):
-        anki.notify("Added 1 note(s)")
+        anki.notify("Note added")
     else:
-        anki.notify("Added 0 note(s)")
+        anki.notify("Failed to add note")
 
     if vocab.create_keyword:
         keywords.openDialog(keywords.Keyword(vocab.keyword, vocab.meaning[0]))

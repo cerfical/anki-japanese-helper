@@ -73,8 +73,10 @@ def openDialog(keyword: Keyword | None = None):
     kanji = parse(keyword.vocab)
 
     # For each unique kanji reading, create a card
-    note_count = 0
+    note_count, total_count, failed_count = 0, 0, 0
     for char, reading in filter(lambda k: k[1], kanji):
+        total_count += 1
+
         # Check for duplicate kanji readings
         if anki.anyNotes(dst_deck, note_type, (kanji_field_name, char), (reading_field_name, reading)):
             continue
@@ -87,5 +89,9 @@ def openDialog(keyword: Keyword | None = None):
 
         if anki.uploadNote(note, dst_deck, note_type):
             note_count += 1
+        else:
+            failed_count += 1
 
-    anki.notify(f"Added {note_count} note(s)")
+    anki.notify(
+        f"Added {note_count} note(s), {total_count - note_count - failed_count} duplicate(s), {failed_count} failed"
+    )

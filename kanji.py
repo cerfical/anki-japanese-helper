@@ -293,6 +293,6 @@ def openDialog(kanji: Kanji | None = None):
     n[strokes_field_name] = f'<img src="{strokes_svg}">'
 
     if anki.uploadNote(n, dst_deck, note_type):
-        anki.notify("Added 1 note(s)")
+        anki.notify("Note added")
     else:
-        anki.notify("Added 0 note(s)")
+        anki.notify("Failed to add note")
