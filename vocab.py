@@ -105,15 +105,19 @@ def openDialog(vocab: Vocab | None = None):
             reading += c
         word += c
 
-    note = {}
-    note[word_field] = word
-    note[reading_field] = reading
-    note[meaning_field] = "<br>".join(vocab.meaning)
+    # Check for duplicate vocabs
+    if not anki.anyNotes(dst_deck, note_type, (word_field, word), (reading_field, reading)):
+        note = {}
+        note[word_field] = word
+        note[reading_field] = reading
+        note[meaning_field] = "<br>".join(vocab.meaning)
 
-    if anki.uploadNote(note, dst_deck, note_type):
-        anki.notify("Note added")
+        if anki.uploadNote(note, dst_deck, note_type):
+            anki.notify("Note added")
+        else:
+            anki.notify("Failed to add note")
     else:
-        anki.notify("Failed to add note")
+        anki.notify("Duplicate note")
 
     if vocab.create_keyword:
         keywords.openDialog(keywords.Keyword(vocab.keyword, vocab.meaning[0]))
