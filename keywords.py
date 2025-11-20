@@ -49,7 +49,11 @@ class KeywordDialog(QDialog):
 
 
 def parse(word: str) -> list[tuple[str, str]]:
-    return re.findall(r"(.)(?:\[([^\]]+)\])?", word)
+    return re.findall(r"(.)(?:[\[(「]([^\]」)]+)[\]」)])?", word)
+
+
+def normalize(word: str) -> str:
+    return re.sub(r"[\[(「]([^\]」)]+)[\]」)]", r"「\g<1>」", word)
 
 
 def openDialog(keyword: Keyword | None = None):
@@ -84,7 +88,7 @@ def openDialog(keyword: Keyword | None = None):
         note = {}
         note[kanji_field_name] = char
         note[reading_field_name] = reading
-        note[keyword_field_name] = keyword.vocab
+        note[keyword_field_name] = normalize(keyword.vocab)
         note[meaning_field_name] = f'<span class="vocab-meaning">{keyword.meaning}</span>'
 
         if anki.uploadNote(note, dst_deck, note_type):
