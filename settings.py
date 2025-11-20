@@ -1,9 +1,8 @@
+import anki_japanese_helper.anki as anki
 from PyQt6.QtCore import QSettings, Qt
 from PyQt6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QGroupBox,
-                             QHBoxLayout, QLabel, QScrollArea, QVBoxLayout,
-                             QWidget)
-
-import anki_japanese_helper.anki as anki
+                             QHBoxLayout, QLabel, QLineEdit, QScrollArea,
+                             QVBoxLayout, QWidget)
 
 
 class SettingsDialog(QDialog):
@@ -37,10 +36,12 @@ class SettingsDialog(QDialog):
         self._groups = {}
         for group, fields in field_groups.items():
             group_name = group.lower().replace(" ", "_")
+            self._groups[group_name] = {}
 
             dst_grp = QGroupBox(group)
             dst_box = QVBoxLayout(dst_grp)
             scroll_layout.addWidget(dst_grp)
+            self._groups[group_name]["layout"] = dst_box
 
             hbox = QHBoxLayout()
             dst_box.addLayout(hbox)
@@ -51,7 +52,6 @@ class SettingsDialog(QDialog):
             vbox.addWidget(QLabel("Destination Deck"))
             deck_combo = QComboBox()
             vbox.addWidget(deck_combo)
-            self._groups[group_name] = {}
             self._groups[group_name]["dst_deck"] = deck_combo
 
             # Note type
@@ -92,6 +92,13 @@ class SettingsDialog(QDialog):
             note_combo.addItems(all_notes)
             note_combo.setCurrentText(self._settings.value(f"{group_name}/note_type", "Basic"))
 
+        hbox = QHBoxLayout()
+        self._groups["kanji_notes"]["layout"].addLayout(hbox)
+        hbox.addWidget(QLabel("Kanji SVG URL"))
+        self._kanji_url_edit = QLineEdit()
+        self._kanji_url_edit.setText(self._settings.value("kanji_notes/kanji_url"))
+        hbox.addWidget(self._kanji_url_edit)
+
         # OK/Cancel buttons
         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         btns.accepted.connect(self.accept)
@@ -113,6 +120,9 @@ class SettingsDialog(QDialog):
             self._settings.endGroup()
 
             self._settings.endGroup()
+
+        kanji_url = self._kanji_url_edit.text().strip().rstrip("/") + "/"
+        self._settings.setValue("kanji_notes/kanji_url", kanji_url)
 
         super().accept()
 

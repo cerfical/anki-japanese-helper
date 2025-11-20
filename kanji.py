@@ -1,3 +1,6 @@
+import anki_japanese_helper.anki as anki
+import anki_japanese_helper.settings as settings
+from anki_japanese_helper.ui import ButtonChip, CounterChip, FlowLayout
 from PyQt6.QtCore import QByteArray, QObject, Qt, QUrl, pyqtSignal
 from PyQt6.QtNetwork import (QNetworkAccessManager, QNetworkReply,
                              QNetworkRequest)
@@ -6,11 +9,6 @@ from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFileDialog, QGroupBox,
                              QHBoxLayout, QLineEdit, QListWidget, QScrollArea,
                              QSizePolicy, QStyle, QVBoxLayout, QWidget)
 
-import anki_japanese_helper.anki as anki
-import anki_japanese_helper.settings as settings
-from anki_japanese_helper.ui import ButtonChip, CounterChip, FlowLayout
-
-KANJI_SVG_URL = "https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/"
 KANJI_PART_DELIM = "<br>"
 
 NO_IMAGE_SVG = b"""
@@ -68,12 +66,12 @@ class SvgLoader(QObject):
         self._manager = QNetworkAccessManager(self)
         self._manager.finished.connect(self._onFinished)
 
-    def load(self, url: str):
+    def load(self, url: QUrl):
         # Cancel any pending requests
         if self._reply:
             self._reply.abort()
             self._reply.deleteLater()
-        request = QNetworkRequest(QUrl(url))
+        request = QNetworkRequest(url)
         self._reply = self._manager.get(request)
 
     def _onFinished(self, reply: QNetworkReply):
@@ -92,6 +90,8 @@ class KanjiDialog(QDialog):
 
         self._kanji_parts = []
         self._kanji = self._loadKanji()
+        self._kanji_url = settings.get().value("kanji_notes/kanji_url")
+
         self.setWindowTitle("Add Kanji")
         layout = QVBoxLayout()
 
@@ -165,7 +165,10 @@ class KanjiDialog(QDialog):
     def _loadKanjiSvg(self):
         kanji = self._kanji_edit.text().strip()
         if len(kanji) == 1:
-            self._svg_loader.load(KANJI_SVG_URL + f"0{ord(kanji):04x}.svg")
+            kanji_url = QUrl(self._kanji_url).resolved(QUrl(f"0{ord(kanji):04x}.svg"))
+            self._svg_loader.load(kanji_url)
+        else:
+            self._setKanjiSvg(NO_IMAGE_SVG)
 
     def _chooseKanjiSvg(self):
         path, _ = QFileDialog.getOpenFileName(self, "Choose SVG Image", "", "SVG Files (*.svg)")
