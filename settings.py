@@ -99,6 +99,20 @@ class SettingsDialog(QDialog):
         self._kanji_url_edit.setText(self._settings.value("kanji_notes/kanji_url"))
         hbox.addWidget(self._kanji_url_edit)
 
+        hbox = QHBoxLayout()
+        self._groups["kanji_notes"]["layout"].addLayout(hbox)
+        hbox.addWidget(QLabel("Component Delimiter"))
+        self._kanji_delim_edit = QLineEdit()
+        self._kanji_delim_edit.setText(self._settings.value("kanji_notes/component_delim"))
+        hbox.addWidget(self._kanji_delim_edit)
+
+        hbox = QHBoxLayout()
+        self._groups["vocab_notes"]["layout"].addLayout(hbox)
+        hbox.addWidget(QLabel("Word Delimiter"))
+        self._vocab_delim_edit = QLineEdit()
+        self._vocab_delim_edit.setText(self._settings.value("vocab_notes/vocab_delim"))
+        hbox.addWidget(self._vocab_delim_edit)
+
         # OK/Cancel buttons
         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         btns.accepted.connect(self.accept)
@@ -123,6 +137,9 @@ class SettingsDialog(QDialog):
 
         kanji_url = self._kanji_url_edit.text().strip().rstrip("/") + "/"
         self._settings.setValue("kanji_notes/kanji_url", kanji_url)
+
+        self._settings.setValue("kanji_notes/component_delim", self._kanji_delim_edit.text())
+        self._settings.setValue("vocab_notes/vocab_delim", self._vocab_delim_edit.text())
 
         super().accept()
 

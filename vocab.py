@@ -1,13 +1,9 @@
-from PyQt6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QHBoxLayout,
-                             QLineEdit, QTextEdit, QVBoxLayout, QWidget)
-
 import anki_japanese_helper.anki as anki
 import anki_japanese_helper.kanji as kanji
 import anki_japanese_helper.keywords as keywords
 import anki_japanese_helper.settings as settings
-
-
-VOCAB_DELIM = "<br>"
+from PyQt6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QHBoxLayout,
+                             QLineEdit, QTextEdit, QVBoxLayout, QWidget)
 
 
 class Vocab:
@@ -94,6 +90,7 @@ def openDialog(vocab: Vocab | None = None):
     s.beginGroup("vocab_notes")
     dst_deck = s.value("dst_deck", "Default")
     note_type = s.value("note_type", "Basic")
+    vocab_delim = s.value("vocab_delim", "; ")
 
     s.beginGroup("field_names")
     word_field = s.value("word", "Word")
@@ -114,7 +111,7 @@ def openDialog(vocab: Vocab | None = None):
         note = {}
         note[word_field] = word
         note[reading_field] = reading
-        note[meaning_field] = VOCAB_DELIM.join(vocab.meaning)
+        note[meaning_field] = vocab_delim.join(vocab.meaning)
 
         if anki.uploadNote(note, dst_deck, note_type):
             anki.notify("Note added")

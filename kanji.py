@@ -9,7 +9,6 @@ from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFileDialog, QGroupBox,
                              QHBoxLayout, QLineEdit, QListWidget, QScrollArea,
                              QSizePolicy, QStyle, QVBoxLayout, QWidget)
 
-KANJI_PART_DELIM = "<br>"
 
 NO_IMAGE_SVG = b"""
 <svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
@@ -270,6 +269,7 @@ def openDialog(kanji: Kanji | None = None):
     s.beginGroup("kanji_notes")
     dst_deck = s.value("dst_deck", "Default")
     note_type = s.value("note_type", "Basic")
+    kanji_delim = s.value("component_delim", "; ")
 
     s.beginGroup("field_names")
     kanji_field_name = s.value("kanji", "Kanji")
@@ -291,7 +291,7 @@ def openDialog(kanji: Kanji | None = None):
     n = {}
     n[kanji_field_name] = note.kanji.char
     n[meaning_field_name] = note.kanji.meaning
-    n[parts_field_name] = KANJI_PART_DELIM.join(
+    n[parts_field_name] = kanji_delim.join(
         map(lambda c: f'{c.kanji.meaning} {c.kanji.char}{"" if c.count == 1 else f" ×{c.count}"}', note.parts)
     )
     n[strokes_field_name] = f'<img src="{strokes_svg}">'
