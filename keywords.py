@@ -85,7 +85,7 @@ def openDialog(keyword: Keyword | None = None):
         note[kanji_field_name] = char
         note[reading_field_name] = reading
         note[keyword_field_name] = keyword.vocab
-        note[meaning_field_name] = keyword.meaning
+        note[meaning_field_name] = f'<span class="vocab-meaning">{keyword.meaning}</span>'
 
         if anki.uploadNote(note, dst_deck, note_type):
             note_count += 1

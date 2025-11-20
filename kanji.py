@@ -286,9 +286,9 @@ def openDialog(kanji: Kanji | None = None):
 
     n = {}
     n[kanji_field_name] = note.kanji.char
-    n[meaning_field_name] = note.kanji.meaning
+    n[meaning_field_name] = f'<span class="kanji-meaning">{note.kanji.meaning}</span>'
     n[parts_field_name] = "<br>".join(
-        map(lambda c: f'{c.kanji.meaning} {c.kanji.char}{"" if c.count == 1 else f" ×{c.count}"}', note.parts)
+        map(lambda c: f'<span class="kanji-part">{c.kanji.meaning}</span> {c.kanji.char}{"" if c.count == 1 else f" ×{c.count}"}', note.parts)
     )
     n[strokes_field_name] = f'<img src="{strokes_svg}">'
 

@@ -111,7 +111,7 @@ def openDialog(vocab: Vocab | None = None):
         note = {}
         note[word_field] = word
         note[reading_field] = reading
-        note[meaning_field] = "<br>".join(vocab.meaning)
+        note[meaning_field] = ", ".join([f'<span class="vocab-meaning">{m}</span>' for m in vocab.meaning])
 
         if anki.uploadNote(note, dst_deck, note_type):
             anki.notify("Note added")
