@@ -7,6 +7,9 @@ import anki_japanese_helper.keywords as keywords
 import anki_japanese_helper.settings as settings
 
 
+VOCAB_DELIM = "<br>"
+
+
 class Vocab:
     def __init__(self, keyword: str, meaning: list[str], create_kanji: bool, create_keyword: bool):
         self.keyword = keyword
@@ -111,7 +114,7 @@ def openDialog(vocab: Vocab | None = None):
         note = {}
         note[word_field] = word
         note[reading_field] = reading
-        note[meaning_field] = ", ".join([f'<span class="vocab-meaning">{m}</span>' for m in vocab.meaning])
+        note[meaning_field] = VOCAB_DELIM.join(vocab.meaning)
 
         if anki.uploadNote(note, dst_deck, note_type):
             anki.notify("Note added")
