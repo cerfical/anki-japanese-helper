@@ -3,7 +3,7 @@ import anki_japanese_helper.kanji as kanji
 import anki_japanese_helper.keywords as keywords
 import anki_japanese_helper.settings as settings
 from PyQt6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QHBoxLayout,
-                             QLineEdit, QTextEdit, QVBoxLayout, QWidget)
+                             QLineEdit, QPlainTextEdit, QVBoxLayout, QWidget)
 
 
 class Vocab:
@@ -25,10 +25,10 @@ class AddVocabDialog(QDialog):
         layout.addLayout(hbox)
 
         self._word_edit = QLineEdit()
-        self._word_edit.setPlaceholderText("Vocab, e.g., 折[お]り紙[がみ]")
+        self._word_edit.setPlaceholderText("Vocab, e.g., 折「お」り紙「がみ」")
         hbox.addWidget(self._word_edit)
 
-        self._meaning_edit = QTextEdit()
+        self._meaning_edit = QPlainTextEdit()
         self._meaning_edit.setPlaceholderText("Meaning")
         self._meaning_edit.setFixedHeight(self._meaning_edit.fontMetrics().lineSpacing() * 4)
         self._meaning_edit.setTabChangesFocus(True)
