@@ -2,6 +2,7 @@ import anki_japanese_helper.anki as anki
 import anki_japanese_helper.kanji as kanji
 import anki_japanese_helper.keywords as keywords
 import anki_japanese_helper.settings as settings
+import anki_japanese_helper.strutil as strutil
 from PyQt6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QHBoxLayout,
                              QLineEdit, QPlainTextEdit, QVBoxLayout, QWidget)
 
@@ -51,7 +52,7 @@ class AddVocabDialog(QDialog):
             self._create_kanji_check.setChecked(vocab.create_kanji)
             self._create_keyword_check.setChecked(vocab.create_keyword)
             self._word_edit.setText(vocab.keyword)
-            self._meanings_edit.setText(vocab.meanings)
+            self._meanings_edit.setPlainText("\n".join(vocab.meanings))
 
         # OK/Cancel buttons
         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -64,7 +65,7 @@ class AddVocabDialog(QDialog):
 
     def getVocab(self) -> Vocab:
         word = self._word_edit.text().strip()
-        meanings = list(filter(None, map(lambda t: t.strip(), self._meanings_edit.toPlainText().split("\n"))))
+        meanings = strutil.parseList(self._meanings_edit.toPlainText(), "\n")
 
         create_kanji = self._create_kanji_check.isChecked()
         create_keyword = self._create_keyword_check.isChecked()

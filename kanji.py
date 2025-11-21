@@ -1,14 +1,15 @@
 import anki_japanese_helper.anki as anki
 import anki_japanese_helper.settings as settings
+import anki_japanese_helper.strutil as strutil
 from anki_japanese_helper.ui import ButtonChip, CounterChip, FlowLayout
 from PyQt6.QtCore import QByteArray, QObject, Qt, QUrl, pyqtSignal
 from PyQt6.QtNetwork import (QNetworkAccessManager, QNetworkReply,
                              QNetworkRequest)
 from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFileDialog, QGroupBox,
-                             QHBoxLayout, QLineEdit, QListWidget, QScrollArea,
-                             QSizePolicy, QStyle, QVBoxLayout, QWidget)
-
+                             QHBoxLayout, QLineEdit, QListWidget,
+                             QPlainTextEdit, QScrollArea, QSizePolicy, QStyle,
+                             QVBoxLayout, QWidget)
 
 NO_IMAGE_SVG = b"""
 <svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
@@ -21,18 +22,19 @@ NO_IMAGE_SVG = b"""
 
 
 class Kanji:
-    def __init__(self, char: str, meaning: str):
+    def __init__(self, char: str, meanings: list[str]):
         self.char = char
-        self.meaning = meaning
+        self.meanings = meanings
 
     def __str__(self):
-        return f"{self.meaning} {self.char}"
+        # Only show the first meaning if there are multiple
+        return f"{self.meanings[0]} {self.char}"
 
     def __eq__(self, other):
-        return (self.meaning, self.char) == (other.meaning, other.char)
+        return self.char == other.char
 
     def __lt__(self, other):
-        return (self.meaning, self.char) < (other.meaning, other.char)
+        return self.char < other.char
 
 
 class KanjiPart:
@@ -41,7 +43,7 @@ class KanjiPart:
         self.count = count
 
     def __str__(self):
-        return f"{self.kanji} ×{self.count}"
+        return f'{self.kanji}{"" if self.count == 1 else f" ×{self.count}"}'
 
     def __eq__(self, other):
         return (self.kanji, self.count) == (other.kanji, other.count)
@@ -119,21 +121,20 @@ class KanjiDialog(QDialog):
         vbox.addWidget(open_btn)
 
         # New kanji info
-        hbox = QHBoxLayout()
-        layout.addLayout(hbox)
-
         self._kanji_edit = QLineEdit()
         self._kanji_edit.textChanged.connect(self._loadKanjiSvg)
         self._kanji_edit.setPlaceholderText("Kanji")
-        hbox.addWidget(self._kanji_edit)
+        layout.addWidget(self._kanji_edit)
 
-        self._meaning_edit = QLineEdit()
-        self._meaning_edit.setPlaceholderText("Meaning")
-        hbox.addWidget(self._meaning_edit)
+        self._meanings_edit = QPlainTextEdit()
+        self._meanings_edit.setPlaceholderText("Meanings")
+        self._meanings_edit.setFixedHeight(self._meanings_edit.fontMetrics().lineSpacing() * 4)
+        self._meanings_edit.setTabChangesFocus(True)
+        layout.addWidget(self._meanings_edit)
 
         if kanji:
             self._kanji_edit.setText(kanji.char)
-            self._meaning_edit.setText(kanji.meaning)
+            self._meanings_edit.setPlainText("\n".join(kanji.meanings))
 
         parts_grp = QGroupBox("Components")
         parts_box = QVBoxLayout(parts_grp)
@@ -224,12 +225,16 @@ class KanjiDialog(QDialog):
         s.beginGroup("kanji_notes")
         dst_deck = s.value("dst_deck", "Default")
         note_type = s.value("note_type", "Basic")
+        meaning_delim = s.value("meaning_delim", "; ")
 
         s.beginGroup("field_names")
         kanji_field = s.value("kanji", "Kanji")
-        meaning_field = s.value("meaning", "Meaning")
+        meanings_field = s.value("meanings", "Meanings")
 
-        return sorted(map(lambda n: Kanji(n[kanji_field], n[meaning_field]), anki.findNotes(dst_deck, note_type)))
+        def read_note(n):
+            return Kanji(n[kanji_field], strutil.parseList(n[meanings_field], meaning_delim))
+
+        return sorted(map(read_note, anki.findNotes(dst_deck, note_type)))
 
     def _createKanjiChip(self, kanji: Kanji):
         chip = CounterChip(f"{kanji}")
@@ -253,8 +258,8 @@ class KanjiDialog(QDialog):
             parts.append(KanjiPart(kanji, counter.count))
 
         kanji_char = self._kanji_edit.text().strip()
-        meaning = self._meaning_edit.text().strip()
-        kanji = Kanji(kanji_char, meaning)
+        meanings = strutil.parseList(self._meanings_edit.toPlainText(), "\n")
+        kanji = Kanji(kanji_char, meanings)
 
         return KanjiNote(kanji, parts, self._kanji_svg)
 
@@ -270,10 +275,11 @@ def openDialog(kanji: Kanji | None = None):
     dst_deck = s.value("dst_deck", "Default")
     note_type = s.value("note_type", "Basic")
     kanji_delim = s.value("component_delim", "; ")
+    meaning_delim = s.value("meaning_delim", "; ")
 
     s.beginGroup("field_names")
     kanji_field_name = s.value("kanji", "Kanji")
-    meaning_field_name = s.value("meaning", "Meaning")
+    meaning_field_name = s.value("meanings", "Meanings")
     parts_field_name = s.value("components", "Components")
     strokes_field_name = s.value("strokes", "Strokes")
 
@@ -282,18 +288,16 @@ def openDialog(kanji: Kanji | None = None):
         anki.notify("No kanji specified")
         return
 
-    if not note.kanji.meaning:
-        anki.notify("No meaning specified")
+    if not note.kanji.meanings:
+        anki.notify("No meanings specified")
         return
 
     strokes_svg = anki.uploadMedia(f"{note.kanji.char}.svg", note.strokes)
 
     n = {}
     n[kanji_field_name] = note.kanji.char
-    n[meaning_field_name] = note.kanji.meaning
-    n[parts_field_name] = kanji_delim.join(
-        map(lambda c: f'{c.kanji.meaning} {c.kanji.char}{"" if c.count == 1 else f" ×{c.count}"}', note.parts)
-    )
+    n[meaning_field_name] = meaning_delim.join(note.kanji.meanings)
+    n[parts_field_name] = kanji_delim.join(map(str, note.parts))
     n[strokes_field_name] = f'<img src="{strokes_svg}">'
 
     if anki.uploadNote(n, dst_deck, note_type):
