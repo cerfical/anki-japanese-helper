@@ -30,7 +30,7 @@ class SettingsDialog(QDialog):
         field_groups = {
             "Kanji Notes": ["Kanji", "Meaning", "Components", "Strokes"],
             "Keyword Notes": ["Kanji", "Reading", "Keyword", "Meaning"],
-            "Vocab Notes": ["Word", "Meaning", "Reading"],
+            "Vocab Notes": ["Word", "Meanings", "Reading"],
         }
 
         self._groups = {}

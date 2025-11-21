@@ -7,9 +7,9 @@ from PyQt6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QHBoxLayout,
 
 
 class Vocab:
-    def __init__(self, keyword: str, meaning: list[str], create_kanji: bool, create_keyword: bool):
+    def __init__(self, keyword: str, meanings: list[str], create_kanji: bool, create_keyword: bool):
         self.keyword = keyword
-        self.meaning = meaning
+        self.meanings = meanings
         self.create_kanji = create_kanji
         self.create_keyword = create_keyword
 
@@ -28,11 +28,11 @@ class AddVocabDialog(QDialog):
         self._word_edit.setPlaceholderText("Vocab, e.g., 折「お」り紙「がみ」")
         hbox.addWidget(self._word_edit)
 
-        self._meaning_edit = QPlainTextEdit()
-        self._meaning_edit.setPlaceholderText("Meaning")
-        self._meaning_edit.setFixedHeight(self._meaning_edit.fontMetrics().lineSpacing() * 4)
-        self._meaning_edit.setTabChangesFocus(True)
-        layout.addWidget(self._meaning_edit)
+        self._meanings_edit = QPlainTextEdit()
+        self._meanings_edit.setPlaceholderText("Meanings")
+        self._meanings_edit.setFixedHeight(self._meanings_edit.fontMetrics().lineSpacing() * 4)
+        self._meanings_edit.setTabChangesFocus(True)
+        layout.addWidget(self._meanings_edit)
 
         hbox = QHBoxLayout()
         layout.addLayout(hbox)
@@ -51,7 +51,7 @@ class AddVocabDialog(QDialog):
             self._create_kanji_check.setChecked(vocab.create_kanji)
             self._create_keyword_check.setChecked(vocab.create_keyword)
             self._word_edit.setText(vocab.keyword)
-            self._meaning_edit.setText(vocab.meaning)
+            self._meanings_edit.setText(vocab.meanings)
 
         # OK/Cancel buttons
         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -64,12 +64,12 @@ class AddVocabDialog(QDialog):
 
     def getVocab(self) -> Vocab:
         word = self._word_edit.text().strip()
-        meaning = list(filter(None, map(lambda t: t.strip(), self._meaning_edit.toPlainText().split("\n"))))
+        meanings = list(filter(None, map(lambda t: t.strip(), self._meanings_edit.toPlainText().split("\n"))))
 
         create_kanji = self._create_kanji_check.isChecked()
         create_keyword = self._create_keyword_check.isChecked()
 
-        return Vocab(word, meaning, create_kanji, create_keyword)
+        return Vocab(word, meanings, create_kanji, create_keyword)
 
 
 def openDialog(vocab: Vocab | None = None):
@@ -78,8 +78,8 @@ def openDialog(vocab: Vocab | None = None):
         return
 
     vocab = dlg.getVocab()
-    if len(vocab.meaning) == 0:
-        anki.notify("No meaning specified")
+    if len(vocab.meanings) == 0:
+        anki.notify("No meanings specified")
         return
     if not vocab.keyword:
         anki.notify("No vocab specified")
@@ -95,7 +95,7 @@ def openDialog(vocab: Vocab | None = None):
     s.beginGroup("field_names")
     word_field = s.value("word", "Word")
     reading_field = s.value("reading", "Reading")
-    meaning_field = s.value("meaning", "Meaning")
+    meanings_field = s.value("meanings", "Meanings")
 
     word, reading = "", ""
     letters = keywords.parse(vocab.keyword)
@@ -111,7 +111,7 @@ def openDialog(vocab: Vocab | None = None):
         note = {}
         note[word_field] = word
         note[reading_field] = reading
-        note[meaning_field] = vocab_delim.join(vocab.meaning)
+        note[meanings_field] = vocab_delim.join(vocab.meanings)
 
         if anki.uploadNote(note, dst_deck, note_type):
             anki.notify("Note added")
@@ -121,7 +121,7 @@ def openDialog(vocab: Vocab | None = None):
         anki.notify("Duplicate note")
 
     if vocab.create_keyword:
-        keywords.openDialog(keywords.Keyword(vocab.keyword, vocab.meaning[0]))
+        keywords.openDialog(keywords.Keyword(vocab.keyword, vocab.meanings[0]))
 
     if vocab.create_kanji:
         s = settings.get()
