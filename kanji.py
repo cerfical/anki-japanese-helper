@@ -91,7 +91,7 @@ class KanjiDialog(QDialog):
 
         self._kanji_parts = []
         self._kanji = self._loadKanji()
-        self._kanji_url = settings.get().value("kanji_notes/kanji_url")
+        self._kanji_url = settings.kanji_notes.kanji_url
 
         self.setWindowTitle("Add Kanji")
         layout = QVBoxLayout()
@@ -221,21 +221,13 @@ class KanjiDialog(QDialog):
         dlg.exec()
 
     def _loadKanji(self) -> list[Kanji]:
-        s = settings.get()
-        value_delim = s.value("general/value_delim")
-
-        s.beginGroup("kanji_notes")
-        dst_deck = s.value("deck", "Default")
-        note_type = s.value("note", "Basic")
-
-        s.beginGroup("fields")
-        kanji_field = s.value("kanji", "Kanji")
-        meanings_field = s.value("meanings", "Meanings")
+        value_sep = settings.general.value_sep
+        s = settings.kanji_notes
 
         def read_note(n):
-            return Kanji(n[kanji_field], strutil.parseList(n[meanings_field], value_delim))
+            return Kanji(n[s.fields.kanji], strutil.parseList(n[s.fields.meanings], value_sep))
 
-        return sorted(map(read_note, anki.findNotes(dst_deck, note_type)))
+        return sorted(map(read_note, anki.findNotes(s.deck, s.note_type)))
 
     def _createKanjiChip(self, kanji: Kanji):
         chip = CounterChip(f"{kanji}")
@@ -270,20 +262,6 @@ def openDialog(kanji: Kanji | None = None):
     if not dlg.exec():
         return
 
-    # Load settings
-    s = settings.get()
-    value_delim = s.value("general/value_delim")
-
-    s.beginGroup("kanji_notes")
-    dst_deck = s.value("deck", "Default")
-    note_type = s.value("note", "Basic")
-
-    s.beginGroup("fields")
-    kanji_field_name = s.value("kanji", "Kanji")
-    meaning_field_name = s.value("meanings", "Meanings")
-    parts_field_name = s.value("components", "Components")
-    strokes_field_name = s.value("strokes", "Strokes")
-
     note = dlg.getKanjiNote()
     if not note.kanji.char:
         anki.notify("No kanji specified")
@@ -295,13 +273,17 @@ def openDialog(kanji: Kanji | None = None):
 
     strokes_svg = anki.uploadMedia(f"{note.kanji.char}.svg", note.strokes)
 
-    n = {}
-    n[kanji_field_name] = note.kanji.char
-    n[meaning_field_name] = value_delim.join(note.kanji.meanings)
-    n[parts_field_name] = value_delim.join(map(str, note.parts))
-    n[strokes_field_name] = f'<img src="{strokes_svg}">'
+    # Load settings
+    value_sep = settings.general.value_sep
+    s = settings.kanji_notes
 
-    if anki.uploadNote(n, dst_deck, note_type):
+    n = {}
+    n[s.fields.kanji] = note.kanji.char
+    n[s.fields.meanings] = value_sep.join(note.kanji.meanings)
+    n[s.fields.components] = value_sep.join(map(str, note.parts))
+    n[s.fields.strokes] = f'<img src="{strokes_svg}">'
+
+    if anki.uploadNote(n, s.deck, s.note_type):
         anki.notify("Note added")
     else:
         anki.notify("Failed to add note")

@@ -87,17 +87,8 @@ def openDialog(vocab: Vocab | None = None):
         return
 
     # Load settings
-    s = settings.get()
-    value_delim = s.value("general/value_delim")
-
-    s.beginGroup("vocab_notes")
-    dst_deck = s.value("deck", "Default")
-    note_type = s.value("note", "Basic")
-
-    s.beginGroup("fields")
-    word_field = s.value("word", "Word")
-    reading_field = s.value("reading", "Reading")
-    meanings_field = s.value("meanings", "Meanings")
+    value_sep = settings.general.value_sep
+    s = settings.vocab_notes
 
     word, reading = "", ""
     letters = keywords.parse(vocab.keyword)
@@ -109,13 +100,13 @@ def openDialog(vocab: Vocab | None = None):
         word += c
 
     # Check for duplicate vocabs
-    if not anki.anyNotes(dst_deck, note_type, (word_field, word), (reading_field, reading)):
+    if not anki.anyNotes(s.deck, s.note_type, (s.fields.word, word), (s.fields.reading, reading)):
         note = {}
-        note[word_field] = word
-        note[reading_field] = reading
-        note[meanings_field] = value_delim.join(vocab.meanings)
+        note[s.fields.word] = word
+        note[s.fields.reading] = reading
+        note[s.fields.meanings] = value_sep.join(vocab.meanings)
 
-        if anki.uploadNote(note, dst_deck, note_type):
+        if anki.uploadNote(note, s.deck, s.note_type):
             anki.notify("Note added")
         else:
             anki.notify("Failed to add note")
@@ -126,13 +117,9 @@ def openDialog(vocab: Vocab | None = None):
         keywords.openDialog(keywords.Keyword(vocab.keyword, vocab.meanings[0]))
 
     if vocab.create_kanji:
-        s = settings.get()
-        s.beginGroup("kanji_notes")
-        dst_deck = s.value("deck", "Default")
-        note_type = s.value("note", "Basic")
-        kanji_field = s.value("fields/kanji", "Kanji")
+        s = settings.kanji_notes
 
-        all_kanji = set(map(lambda n: n[kanji_field], anki.findNotes(dst_deck, note_type)))
+        all_kanji = set(map(lambda n: n[s.fields.kanji], anki.findNotes(s.deck, s.note_type)))
         kanji_set = set(map(lambda k: k[0], filter(lambda k: k[1], letters)))
 
         for k in kanji_set - all_kanji:

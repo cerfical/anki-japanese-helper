@@ -1,10 +1,9 @@
 import re
 
-from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QHBoxLayout, QLineEdit,
-                             QVBoxLayout, QWidget)
-
 import anki_japanese_helper.anki as anki
 import anki_japanese_helper.settings as settings
+from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QHBoxLayout, QLineEdit,
+                             QVBoxLayout, QWidget)
 
 
 class Keyword:
@@ -60,18 +59,7 @@ def openDialog(keyword: Keyword | None = None):
     dlg = KeywordDialog(keyword)
     if not dlg.exec():
         return
-
-    # Load settings
-    s = settings.get()
-    s.beginGroup("keyword_notes")
-    dst_deck = s.value("deck", "Default")
-    note_type = s.value("note", "Basic")
-
-    s.beginGroup("fields")
-    kanji_field_name = s.value("kanji", "Kanji")
-    reading_field_name = s.value("reading", "Reading")
-    keyword_field_name = s.value("keyword", "Keyword")
-    meaning_field_name = s.value("meaning", "Meaning")
+    s = settings.keyword_notes
 
     keyword = dlg.getKeyword()
     kanji = parse(keyword.vocab)
@@ -82,16 +70,16 @@ def openDialog(keyword: Keyword | None = None):
         total_count += 1
 
         # Check for duplicate kanji readings
-        if anki.anyNotes(dst_deck, note_type, (kanji_field_name, char), (reading_field_name, reading)):
+        if anki.anyNotes(s.deck, s.note_type, (s.fields.kanji, char), (s.fields.reading, reading)):
             continue
 
         note = {}
-        note[kanji_field_name] = char
-        note[reading_field_name] = reading
-        note[keyword_field_name] = normalize(keyword.vocab)
-        note[meaning_field_name] = keyword.meaning
+        note[s.fields.kanji] = char
+        note[s.fields.reading] = reading
+        note[s.fields.keyword] = normalize(keyword.vocab)
+        note[s.fields.meaning] = keyword.meaning
 
-        if anki.uploadNote(note, dst_deck, note_type):
+        if anki.uploadNote(note, s.deck, s.note_type):
             note_count += 1
         else:
             failed_count += 1
