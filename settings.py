@@ -33,6 +33,18 @@ class SettingsDialog(QDialog):
             "Vocab Notes": ["Word", "Meanings", "Reading"],
         }
 
+        gnrl_grp = QGroupBox("General")
+        gnrl_box = QVBoxLayout(gnrl_grp)
+        scroll_layout.addWidget(gnrl_grp)
+
+        hbox = QHBoxLayout()
+        gnrl_box.addLayout(hbox)
+
+        hbox.addWidget(QLabel("Value Delimiter"))
+        self._value_delim_edit = QLineEdit()
+        self._value_delim_edit.setText(self._settings.value("general/value_delim"))
+        hbox.addWidget(self._value_delim_edit)
+
         self._groups = {}
         for group, fields in field_groups.items():
             group_name = group.lower().replace(" ", "_")
@@ -47,27 +59,23 @@ class SettingsDialog(QDialog):
             dst_box.addLayout(hbox)
 
             # Destination deck
-            vbox = QVBoxLayout()
-            hbox.addLayout(vbox)
-            vbox.addWidget(QLabel("Destination Deck"))
+            hbox.addWidget(QLabel("Deck"))
             deck_combo = QComboBox()
-            vbox.addWidget(deck_combo)
-            self._groups[group_name]["dst_deck"] = deck_combo
+            hbox.addWidget(deck_combo)
+            self._groups[group_name]["deck"] = deck_combo
 
             # Note type
-            vbox = QVBoxLayout()
-            hbox.addLayout(vbox)
-            vbox.addWidget(QLabel("Note Type"))
+            hbox.addWidget(QLabel("Note"))
             note_combo = QComboBox()
-            vbox.addWidget(note_combo)
-            self._groups[group_name]["note_type"] = note_combo
+            hbox.addWidget(note_combo)
+            self._groups[group_name]["note"] = note_combo
 
             # Field names
-            fields_grp = QGroupBox("Field Names")
+            fields_grp = QGroupBox("Fields")
             dst_box.addWidget(fields_grp)
             fields_box = QVBoxLayout(fields_grp)
 
-            self._groups[group_name]["field_names"] = {}
+            self._groups[group_name]["fields"] = {}
             for field in fields:
                 hbox = QHBoxLayout()
                 fields_box.addLayout(hbox)
@@ -79,18 +87,18 @@ class SettingsDialog(QDialog):
                 def reload_fields(current_note, g=group_name, fn=field_name, f=field, c=field_combo):
                     c.clear()
                     c.addItems(anki.findFields(current_note))
-                    c.setCurrentText(self._settings.value(f"{g}/field_names/{fn}", f))
+                    c.setCurrentText(self._settings.value(f"{g}/fields/{fn}", f))
 
                 note_combo.currentTextChanged.connect(reload_fields)
                 hbox.addWidget(field_combo)
 
-                self._groups[group_name]["field_names"][field_name] = field_combo
+                self._groups[group_name]["fields"][field_name] = field_combo
 
             # Load previous settings
             deck_combo.addItems(all_decks)
-            deck_combo.setCurrentText(self._settings.value(f"{group_name}/dst_deck", "Default"))
+            deck_combo.setCurrentText(self._settings.value(f"{group_name}/deck", "Default"))
             note_combo.addItems(all_notes)
-            note_combo.setCurrentText(self._settings.value(f"{group_name}/note_type", "Basic"))
+            note_combo.setCurrentText(self._settings.value(f"{group_name}/note", "Basic"))
 
         hbox = QHBoxLayout()
         self._groups["kanji_notes"]["layout"].addLayout(hbox)
@@ -98,27 +106,6 @@ class SettingsDialog(QDialog):
         self._kanji_url_edit = QLineEdit()
         self._kanji_url_edit.setText(self._settings.value("kanji_notes/kanji_url"))
         hbox.addWidget(self._kanji_url_edit)
-
-        hbox = QHBoxLayout()
-        self._groups["kanji_notes"]["layout"].addLayout(hbox)
-        hbox.addWidget(QLabel("Component Delimiter"))
-        self._kanji_delim_edit = QLineEdit()
-        self._kanji_delim_edit.setText(self._settings.value("kanji_notes/component_delim"))
-        hbox.addWidget(self._kanji_delim_edit)
-
-        hbox = QHBoxLayout()
-        self._groups["kanji_notes"]["layout"].addLayout(hbox)
-        hbox.addWidget(QLabel("Meaning Delimiter"))
-        self._kanji_meaning_delim_edit = QLineEdit()
-        self._kanji_meaning_delim_edit.setText(self._settings.value("kanji_notes/meaning_delim"))
-        hbox.addWidget(self._kanji_meaning_delim_edit)
-
-        hbox = QHBoxLayout()
-        self._groups["vocab_notes"]["layout"].addLayout(hbox)
-        hbox.addWidget(QLabel("Word Delimiter"))
-        self._vocab_delim_edit = QLineEdit()
-        self._vocab_delim_edit.setText(self._settings.value("vocab_notes/vocab_delim"))
-        hbox.addWidget(self._vocab_delim_edit)
 
         # OK/Cancel buttons
         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -132,11 +119,11 @@ class SettingsDialog(QDialog):
         # Preserve settings
         for group_name, group in self._groups.items():
             self._settings.beginGroup(group_name)
-            self._settings.setValue(f"dst_deck", group["dst_deck"].currentText())
-            self._settings.setValue(f"note_type", group["note_type"].currentText())
+            self._settings.setValue("deck", group["deck"].currentText())
+            self._settings.setValue("note", group["note"].currentText())
 
-            self._settings.beginGroup("field_names")
-            for field, combo in group["field_names"].items():
+            self._settings.beginGroup("fields")
+            for field, combo in group["fields"].items():
                 self._settings.setValue(field, combo.currentText())
             self._settings.endGroup()
 
@@ -144,10 +131,7 @@ class SettingsDialog(QDialog):
 
         kanji_url = self._kanji_url_edit.text().strip().rstrip("/") + "/"
         self._settings.setValue("kanji_notes/kanji_url", kanji_url)
-
-        self._settings.setValue("kanji_notes/component_delim", self._kanji_delim_edit.text())
-        self._settings.setValue("kanji_notes/meaning_delim", self._kanji_meaning_delim_edit.text())
-        self._settings.setValue("vocab_notes/vocab_delim", self._vocab_delim_edit.text())
+        self._settings.setValue("general/value_delim", self._value_delim_edit.text())
 
         super().accept()
 
@@ -157,6 +141,6 @@ def get() -> QSettings:
 
 
 def openDialog():
-    dlg = SettingsDialog()
+    dlg = SettingsDialog("Settings")
     if dlg.exec():
         anki.notify("Settings saved")

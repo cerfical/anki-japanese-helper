@@ -222,17 +222,18 @@ class KanjiDialog(QDialog):
 
     def _loadKanji(self) -> list[Kanji]:
         s = settings.get()
-        s.beginGroup("kanji_notes")
-        dst_deck = s.value("dst_deck", "Default")
-        note_type = s.value("note_type", "Basic")
-        meaning_delim = s.value("meaning_delim", "; ")
+        value_delim = s.value("general/value_delim")
 
-        s.beginGroup("field_names")
+        s.beginGroup("kanji_notes")
+        dst_deck = s.value("deck", "Default")
+        note_type = s.value("note", "Basic")
+
+        s.beginGroup("fields")
         kanji_field = s.value("kanji", "Kanji")
         meanings_field = s.value("meanings", "Meanings")
 
         def read_note(n):
-            return Kanji(n[kanji_field], strutil.parseList(n[meanings_field], meaning_delim))
+            return Kanji(n[kanji_field], strutil.parseList(n[meanings_field], value_delim))
 
         return sorted(map(read_note, anki.findNotes(dst_deck, note_type)))
 
@@ -271,13 +272,13 @@ def openDialog(kanji: Kanji | None = None):
 
     # Load settings
     s = settings.get()
-    s.beginGroup("kanji_notes")
-    dst_deck = s.value("dst_deck", "Default")
-    note_type = s.value("note_type", "Basic")
-    kanji_delim = s.value("component_delim", "; ")
-    meaning_delim = s.value("meaning_delim", "; ")
+    value_delim = s.value("general/value_delim")
 
-    s.beginGroup("field_names")
+    s.beginGroup("kanji_notes")
+    dst_deck = s.value("deck", "Default")
+    note_type = s.value("note", "Basic")
+
+    s.beginGroup("fields")
     kanji_field_name = s.value("kanji", "Kanji")
     meaning_field_name = s.value("meanings", "Meanings")
     parts_field_name = s.value("components", "Components")
@@ -296,8 +297,8 @@ def openDialog(kanji: Kanji | None = None):
 
     n = {}
     n[kanji_field_name] = note.kanji.char
-    n[meaning_field_name] = meaning_delim.join(note.kanji.meanings)
-    n[parts_field_name] = kanji_delim.join(map(str, note.parts))
+    n[meaning_field_name] = value_delim.join(note.kanji.meanings)
+    n[parts_field_name] = value_delim.join(map(str, note.parts))
     n[strokes_field_name] = f'<img src="{strokes_svg}">'
 
     if anki.uploadNote(n, dst_deck, note_type):

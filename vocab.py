@@ -88,12 +88,13 @@ def openDialog(vocab: Vocab | None = None):
 
     # Load settings
     s = settings.get()
-    s.beginGroup("vocab_notes")
-    dst_deck = s.value("dst_deck", "Default")
-    note_type = s.value("note_type", "Basic")
-    vocab_delim = s.value("vocab_delim", "; ")
+    value_delim = s.value("general/value_delim")
 
-    s.beginGroup("field_names")
+    s.beginGroup("vocab_notes")
+    dst_deck = s.value("deck", "Default")
+    note_type = s.value("note", "Basic")
+
+    s.beginGroup("fields")
     word_field = s.value("word", "Word")
     reading_field = s.value("reading", "Reading")
     meanings_field = s.value("meanings", "Meanings")
@@ -112,7 +113,7 @@ def openDialog(vocab: Vocab | None = None):
         note = {}
         note[word_field] = word
         note[reading_field] = reading
-        note[meanings_field] = vocab_delim.join(vocab.meanings)
+        note[meanings_field] = value_delim.join(vocab.meanings)
 
         if anki.uploadNote(note, dst_deck, note_type):
             anki.notify("Note added")
@@ -127,9 +128,9 @@ def openDialog(vocab: Vocab | None = None):
     if vocab.create_kanji:
         s = settings.get()
         s.beginGroup("kanji_notes")
-        dst_deck = s.value("dst_deck", "Default")
-        note_type = s.value("note_type", "Basic")
-        kanji_field = s.value("field_names/kanji", "Kanji")
+        dst_deck = s.value("deck", "Default")
+        note_type = s.value("note", "Basic")
+        kanji_field = s.value("fields/kanji", "Kanji")
 
         all_kanji = set(map(lambda n: n[kanji_field], anki.findNotes(dst_deck, note_type)))
         kanji_set = set(map(lambda k: k[0], filter(lambda k: k[1], letters)))

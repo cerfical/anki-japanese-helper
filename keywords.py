@@ -64,10 +64,10 @@ def openDialog(keyword: Keyword | None = None):
     # Load settings
     s = settings.get()
     s.beginGroup("keyword_notes")
-    dst_deck = s.value("dst_deck", "Default")
-    note_type = s.value("note_type", "Basic")
+    dst_deck = s.value("deck", "Default")
+    note_type = s.value("note", "Basic")
 
-    s.beginGroup("field_names")
+    s.beginGroup("fields")
     kanji_field_name = s.value("kanji", "Kanji")
     reading_field_name = s.value("reading", "Reading")
     keyword_field_name = s.value("keyword", "Keyword")
