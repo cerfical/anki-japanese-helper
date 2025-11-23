@@ -1,8 +1,8 @@
 import anki_japanese_helper.anki as anki
-from PyQt6.QtCore import QSettings, Qt
+from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QGroupBox,
                              QHBoxLayout, QLabel, QLayout, QLineEdit,
-                             QScrollArea, QVBoxLayout, QWidget)
+                             QTabWidget, QVBoxLayout, QWidget)
 
 
 class Settings:
@@ -158,37 +158,38 @@ class SettingsDialog(QDialog):
     def __init__(self, title: str = "", parent: QWidget = None):
         super().__init__(parent)
 
-        self.setWindowTitle(title)
-        layout = QVBoxLayout()
-        scroll_layout = self._createScroll(layout)
-
         self._decks = anki.decks()
         self._note_types = anki.noteTypes()
+        self.setWindowTitle(title)
+        layout = QVBoxLayout()
 
-        gnrl_box = self._createGroup("General", scroll_layout)
-        self._createLabeledEdit("Value Separator", gnrl_box, general, "value_sep")
+        tabs = QTabWidget()
+        layout.addWidget(tabs)
 
-        kanji_note_layout = self._createNoteSettings(
+        gnrl_layout = self._createGeneralSettings()
+        tabs.addTab(self._wrapLayout(gnrl_layout), "General")
+
+        kanji_notes_layout = self._createNoteSettings(
             "Kanji Notes",
             ["Kanji", "Meanings", "Components", "Strokes"],
-            scroll_layout,
             kanji_notes
         )
-        self._createLabeledEdit("Kanji SVG URL", kanji_note_layout, kanji_notes, "kanji_url")
+        self._createLabeledEdit("Kanji SVG URL", kanji_notes_layout, kanji_notes, "kanji_url")
+        tabs.addTab(self._wrapLayout(kanji_notes_layout), "Kanji Notes")
 
-        self._createNoteSettings(
+        keyword_notes_layout = self._createNoteSettings(
             "Keyword Notes",
             ["Kanji", "Reading", "Keyword", "Meaning"],
-            scroll_layout,
             keyword_notes
         )
+        tabs.addTab(self._wrapLayout(keyword_notes_layout), "Keyword Notes")
 
-        self._createNoteSettings(
+        vocab_notes_layout = self._createNoteSettings(
             "Vocab Notes",
             ["Word", "Meanings", "Reading"],
-            scroll_layout,
             vocab_notes
         )
+        tabs.addTab(self._wrapLayout(vocab_notes_layout), "Vocab Notes")
 
         # OK/Cancel buttons
         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -198,8 +199,15 @@ class SettingsDialog(QDialog):
 
         self.setLayout(layout)
 
-    def _createNoteSettings(self, grp: str, fields: list[str], layout: QLayout, settings: NoteSettings) -> QLayout:
-        note_layout = self._createGroup(grp, layout)
+    def _createGeneralSettings(self) -> QLayout:
+        layout = QVBoxLayout()
+        self._createLabeledEdit("Value Separator", layout, general, "value_sep")
+
+        layout.addStretch()
+        return layout
+
+    def _createNoteSettings(self, grp: str, fields: list[str], settings: NoteSettings) -> QLayout:
+        note_layout = QVBoxLayout()
 
         hbox = QHBoxLayout()
         note_layout.addLayout(hbox)
@@ -222,7 +230,13 @@ class SettingsDialog(QDialog):
                 c.setCurrentText(getattr(field_settings, fn))
             note_combo.currentTextChanged.connect(reload_fields)
 
+        note_layout.addStretch()
         return note_layout
+
+    def _wrapLayout(self, layout: QLayout) -> QWidget:
+        w = QWidget()
+        w.setLayout(layout)
+        return w
 
     def _createGroup(self, name: str, layout: QLayout) -> QLayout:
         grp = QGroupBox(name)
@@ -256,19 +270,6 @@ class SettingsDialog(QDialog):
         self.accepted.connect(lambda: setattr(settings, setting_name, line_edit.text()))
 
         return line_edit
-
-    def _createScroll(self, layout: QLayout) -> QLayout:
-        scroll = QScrollArea()
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setWidgetResizable(True)
-        layout.addWidget(scroll)
-
-        scroll_container = QWidget()
-        scroll.setWidget(scroll_container)
-
-        scroll_layout = QVBoxLayout()
-        scroll_container.setLayout(scroll_layout)
-        return scroll_layout
 
 
 def openDialog():
