@@ -1,6 +1,7 @@
+import re
+
 import anki_japanese_helper.anki as anki
 import anki_japanese_helper.kanji as kanji
-import anki_japanese_helper.keywords as keywords
 import anki_japanese_helper.settings as settings
 import anki_japanese_helper.strutil as strutil
 from PyQt6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QHBoxLayout,
@@ -8,11 +9,10 @@ from PyQt6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QHBoxLayout,
 
 
 class Vocab:
-    def __init__(self, keyword: str, meanings: list[str], create_kanji: bool, create_keyword: bool):
-        self.keyword = keyword
+    def __init__(self, furigana: str, meanings: list[str], create_kanji: bool):
+        self.furigana = furigana
         self.meanings = meanings
         self.create_kanji = create_kanji
-        self.create_keyword = create_keyword
 
 
 class AddVocabDialog(QDialog):
@@ -25,9 +25,9 @@ class AddVocabDialog(QDialog):
         hbox = QHBoxLayout()
         layout.addLayout(hbox)
 
-        self._word_edit = QLineEdit()
-        self._word_edit.setPlaceholderText("Vocab, e.g., 折「お」り紙「がみ」")
-        hbox.addWidget(self._word_edit)
+        self._furigana_edit = QLineEdit()
+        self._furigana_edit.setPlaceholderText("Vocab, e.g., 折「お」り紙「がみ」")
+        hbox.addWidget(self._furigana_edit)
 
         self._meanings_edit = QPlainTextEdit()
         self._meanings_edit.setPlaceholderText("Meanings")
@@ -43,15 +43,9 @@ class AddVocabDialog(QDialog):
         self._create_kanji_check.setChecked(True)
         hbox.addWidget(self._create_kanji_check)
 
-        self._create_keyword_check = QCheckBox()
-        self._create_keyword_check.setText("Keyword Notes")
-        self._create_keyword_check.setChecked(True)
-        hbox.addWidget(self._create_keyword_check)
-
         if vocab:
             self._create_kanji_check.setChecked(vocab.create_kanji)
-            self._create_keyword_check.setChecked(vocab.create_keyword)
-            self._word_edit.setText(vocab.keyword)
+            self._furigana_edit.setText(vocab.furigana)
             self._meanings_edit.setPlainText("\n".join(vocab.meanings))
 
         # OK/Cancel buttons
@@ -61,16 +55,22 @@ class AddVocabDialog(QDialog):
         layout.addWidget(btns)
 
         self.setLayout(layout)
-        self._word_edit.setFocus()
+        self._furigana_edit.setFocus()
 
     def getVocab(self) -> Vocab:
-        word = self._word_edit.text().strip()
+        furigana = self._furigana_edit.text()
         meanings = strutil.parseList(self._meanings_edit.toPlainText(), "\n")
-
         create_kanji = self._create_kanji_check.isChecked()
-        create_keyword = self._create_keyword_check.isChecked()
 
-        return Vocab(word, meanings, create_kanji, create_keyword)
+        return Vocab(furigana, meanings, create_kanji)
+
+
+def parse_furigana(furigana: str) -> list[tuple[str, str]]:
+    return re.findall(r"(.)(?:[\[(「]([^\]」)]+)[\]」)])?", furigana)
+
+
+def normalize_furigana(furigana: str) -> str:
+    return re.sub(r"[\[(「]([^\]」)]+)[\]」)]", r"「\g<1>」", furigana)
 
 
 def openDialog(vocab: Vocab | None = None):
@@ -79,19 +79,17 @@ def openDialog(vocab: Vocab | None = None):
         return
 
     vocab = dlg.getVocab()
-    if len(vocab.meanings) == 0:
+    if not vocab.meanings:
         anki.notify("No meanings specified")
         return
-    if not vocab.keyword:
+
+    furigana = normalize_furigana(vocab.furigana.strip())
+    if not furigana:
         anki.notify("No vocab specified")
         return
 
-    # Load settings
-    value_sep = settings.general.value_sep
-    s = settings.vocab_notes
-
     word, reading = "", ""
-    letters = keywords.parse(vocab.keyword)
+    letters = parse_furigana(furigana)
     for c, r in letters:
         if r:
             reading += r
@@ -99,22 +97,23 @@ def openDialog(vocab: Vocab | None = None):
             reading += c
         word += c
 
+    value_sep = settings.general.value_sep
+    s = settings.vocab_notes
+
     # Check for duplicate vocabs
     if not anki.anyNotes(s.deck, s.note_type, (s.fields.word, word), (s.fields.reading, reading)):
         note = {}
         note[s.fields.word] = word
         note[s.fields.reading] = reading
+        note[s.fields.furigana] = furigana
         note[s.fields.meanings] = value_sep.join(vocab.meanings)
 
         if anki.uploadNote(note, s.deck, s.note_type):
             anki.notify("Note added")
         else:
-            anki.notify("Failed to add note")
+            anki.notify("Failed to add a note")
     else:
         anki.notify("Duplicate note")
-
-    if vocab.create_keyword:
-        keywords.openDialog(keywords.Keyword(vocab.keyword, vocab.meanings[0]))
 
     if vocab.create_kanji:
         s = settings.kanji_notes

@@ -38,8 +38,12 @@ def findNotes(deck: str, note_type: str, *fields: tuple[str, str]) -> list[Note]
 
 
 def findFields(note_type: str) -> list[str]:
+    notes = _noteTypeByName(note_type)
+    if not notes:
+        return []
+
     field_names = []
-    for field in _noteTypeByName(note_type)["flds"]:
+    for field in notes["flds"]:
         field_names.append(field["name"])
     return field_names
 

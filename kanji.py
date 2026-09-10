@@ -250,7 +250,7 @@ class KanjiDialog(QDialog):
         for kanji, counter in self._kanji_parts:
             parts.append(KanjiPart(kanji, counter.count))
 
-        kanji_char = self._kanji_edit.text().strip()
+        kanji_char = self._kanji_edit.text()
         meanings = strutil.parseList(self._meanings_edit.toPlainText(), "\n")
         kanji = Kanji(kanji_char, meanings)
 
@@ -273,17 +273,16 @@ def openDialog(kanji: Kanji | None = None):
 
     strokes_svg = anki.uploadMedia(f"{note.kanji.char}.svg", note.strokes)
 
-    # Load settings
     value_sep = settings.general.value_sep
     s = settings.kanji_notes
 
     n = {}
-    n[s.fields.kanji] = note.kanji.char
+    n[s.fields.kanji] = note.kanji.char.strip()
     n[s.fields.meanings] = value_sep.join(note.kanji.meanings)
     n[s.fields.components] = value_sep.join(map(str, note.parts))
-    n[s.fields.strokes] = f'<img src="{strokes_svg}">'
+    n[s.fields.strokes] = f"<img src='{strokes_svg}'>"
 
     if anki.uploadNote(n, s.deck, s.note_type):
         anki.notify("Note added")
     else:
-        anki.notify("Failed to add note")
+        anki.notify("Failed to add a note")

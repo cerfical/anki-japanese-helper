@@ -90,37 +90,6 @@ class KanjiNoteSettings(NoteSettings):
     kanji_url = property(get_kanji_url, set_kanji_url)
 
 
-class KeywordNoteSettings(NoteSettings):
-    class FieldSettings(Settings):
-        def __init__(self, group: str):
-            super().__init__(group)
-
-        kanji = property(
-            lambda self: self.get_value("kanji", "Kanji"),
-            lambda self, v: self.set_value("kanji", v)
-        )
-
-        reading = property(
-            lambda self: self.get_value("reading", "Reading"),
-            lambda self, v: self.set_value("reading", v)
-        )
-
-        keyword = property(
-            lambda self: self.get_value("keyword", "Keyword"),
-            lambda self, v: self.set_value("keyword", v)
-        )
-
-        meaning = property(
-            lambda self: self.get_value("meaning", "Meaning"),
-            lambda self, v: self.set_value("meaning", v)
-        )
-
-    def __init__(self, group: str):
-        super().__init__(group)
-
-        self.fields = KeywordNoteSettings.FieldSettings(f"{group}/fields")
-
-
 class VocabNoteSettings(NoteSettings):
     class FieldSettings(Settings):
         def __init__(self, group: str):
@@ -134,6 +103,11 @@ class VocabNoteSettings(NoteSettings):
         reading = property(
             lambda self: self.get_value("reading", "Reading"),
             lambda self, v: self.set_value("reading", v)
+        )
+
+        furigana = property(
+            lambda self: self.get_value("furigana", "Furigana"),
+            lambda self, v: self.set_value("furigana", v)
         )
 
         meanings = property(
@@ -150,7 +124,6 @@ class VocabNoteSettings(NoteSettings):
 general = GeneralSettings("general")
 
 kanji_notes = KanjiNoteSettings("kanji_notes")
-keyword_notes = KeywordNoteSettings("keyword_notes")
 vocab_notes = VocabNoteSettings("vocab_notes")
 
 
@@ -170,23 +143,14 @@ class SettingsDialog(QDialog):
         tabs.addTab(self._wrapLayout(gnrl_layout), "General")
 
         kanji_notes_layout = self._createNoteSettings(
-            "Kanji Notes",
             ["Kanji", "Meanings", "Components", "Strokes"],
             kanji_notes
         )
         self._createLabeledEdit("Kanji SVG URL", kanji_notes_layout, kanji_notes, "kanji_url")
         tabs.addTab(self._wrapLayout(kanji_notes_layout), "Kanji Notes")
 
-        keyword_notes_layout = self._createNoteSettings(
-            "Keyword Notes",
-            ["Kanji", "Reading", "Keyword", "Meaning"],
-            keyword_notes
-        )
-        tabs.addTab(self._wrapLayout(keyword_notes_layout), "Keyword Notes")
-
         vocab_notes_layout = self._createNoteSettings(
-            "Vocab Notes",
-            ["Word", "Meanings", "Reading"],
+            ["Word", "Reading", "Furigana", "Meanings"],
             vocab_notes
         )
         tabs.addTab(self._wrapLayout(vocab_notes_layout), "Vocab Notes")
@@ -206,7 +170,7 @@ class SettingsDialog(QDialog):
         layout.addStretch()
         return layout
 
-    def _createNoteSettings(self, grp: str, fields: list[str], settings: NoteSettings) -> QLayout:
+    def _createNoteSettings(self, fields: list[str], settings: NoteSettings) -> QLayout:
         note_layout = QVBoxLayout()
 
         hbox = QHBoxLayout()
