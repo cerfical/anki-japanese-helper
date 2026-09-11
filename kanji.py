@@ -280,7 +280,7 @@ def openDialog(kanji: Kanji | None = None):
     n[s.fields.components] = value_sep.join(map(str, note.components))
     n[s.fields.strokes] = f"<img src='{strokes_svg}'>"
 
-    if anki.uploadNote(n, s.deck, s.note_type):
+    if anki.uploadNote(n, s.deck, s.note_type, []):
         anki.notify("Note added")
     else:
         anki.notify("Failed to add a note")

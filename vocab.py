@@ -1,18 +1,28 @@
 import re
 
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QGroupBox,
+                             QHBoxLayout, QLineEdit, QListWidget,
+                             QPlainTextEdit, QScrollArea, QVBoxLayout, QWidget)
+
 import anki_japanese_helper.anki as anki
 import anki_japanese_helper.kanji as kanji
 import anki_japanese_helper.settings as settings
 import anki_japanese_helper.strutil as strutil
-from PyQt6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QHBoxLayout,
-                             QLineEdit, QPlainTextEdit, QVBoxLayout, QWidget)
+from anki_japanese_helper.ui import ButtonChip, TextChip
 
 
 class Vocab:
-    def __init__(self, furigana: str, meanings: list[str], create_kanji: bool):
+    def __init__(self, furigana: str, meanings: list[str]):
         self.furigana = furigana
         self.meanings = meanings
-        self.create_kanji = create_kanji
+
+
+class VocabNote:
+    def __init__(self, vocab: Vocab, tags: list[str], add_kanji: bool):
+        self.vocab = vocab
+        self.tags = tags
+        self.add_kanji = add_kanji
 
 
 class VocabDialog(QDialog):
@@ -35,18 +45,31 @@ class VocabDialog(QDialog):
         self._meanings_edit.setTabChangesFocus(True)
         layout.addWidget(self._meanings_edit)
 
-        hbox = QHBoxLayout()
-        layout.addLayout(hbox)
-
-        self._create_kanji_check = QCheckBox()
-        self._create_kanji_check.setText("Kanji Notes")
-        self._create_kanji_check.setChecked(True)
-        hbox.addWidget(self._create_kanji_check)
-
         if vocab:
-            self._create_kanji_check.setChecked(vocab.create_kanji)
             self._furigana_edit.setText(vocab.furigana)
             self._meanings_edit.setPlainText("\n".join(vocab.meanings))
+
+        tags_grp = QGroupBox("Tags")
+        tags_box = QVBoxLayout(tags_grp)
+        layout.addWidget(tags_grp)
+
+        # Tag chips
+        tags_widget = QWidget()
+        self._tags_box = QVBoxLayout(tags_widget)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(tags_widget)
+        tags_box.addWidget(scroll)
+
+        # "Add tag" chip
+        btn = ButtonChip("+")
+        btn.clicked.connect(self._showTagsPopup)
+        tags_box.addWidget(btn)
+
+        self._add_kanji_check = QCheckBox()
+        self._add_kanji_check.setText("Add Kanji")
+        self._add_kanji_check.setChecked(True)
+        layout.addWidget(self._add_kanji_check)
 
         # OK/Cancel buttons
         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -54,15 +77,64 @@ class VocabDialog(QDialog):
         btns.rejected.connect(self.reject)
         layout.addWidget(btns)
 
+        self._all_tags = anki.tags()
+        self._tags = []
+
         self.setLayout(layout)
         self._furigana_edit.setFocus()
 
-    def getVocab(self) -> Vocab:
+    def getVocabNote(self) -> VocabNote:
         furigana = self._furigana_edit.text()
         meanings = strutil.parseList(self._meanings_edit.toPlainText(), "\n")
-        create_kanji = self._create_kanji_check.isChecked()
 
-        return Vocab(furigana, meanings, create_kanji)
+        add_kanji = self._add_kanji_check.isChecked()
+        vocab = Vocab(furigana, meanings)
+
+        return VocabNote(vocab, self._tags, add_kanji)
+
+    def _showTagsPopup(self):
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Add Tag")
+        dlg.setWindowFlags(Qt.WindowType.Popup)
+
+        layout = QVBoxLayout(dlg)
+
+        search = QLineEdit()
+        search.setPlaceholderText("Search for...")
+        layout.addWidget(search)
+
+        list_widget = QListWidget()
+        list_widget.addItems(self._all_tags)
+        layout.addWidget(list_widget)
+
+        def filter_items(text):
+            for i in range(list_widget.count()):
+                item = list_widget.item(i)
+                item.setHidden(text.lower() not in item.text().lower())
+
+        search.textChanged.connect(filter_items)
+        search.setFocus()
+
+        def item_selected(item):
+            t = self._all_tags[list_widget.row(item)]
+            self._createTagChip(t)
+            dlg.close()
+
+        list_widget.itemClicked.connect(item_selected)
+        dlg.exec()
+
+    def _createTagChip(self, tag: str):
+        chip = TextChip(tag)
+
+        self._tags_box.addWidget(chip)
+        self._tags.append(tag)
+
+        def delete_chip(t=tag, c=chip):
+            self._tags_box.removeWidget(c)
+            c.deleteLater()
+            self._tags.remove(t)
+
+        chip.remove.connect(delete_chip)
 
 
 def parse_furigana(furigana: str) -> list[tuple[str, str]]:
@@ -78,12 +150,12 @@ def openDialog(vocab: Vocab | None = None):
     if not dlg.exec():
         return
 
-    vocab = dlg.getVocab()
-    if not vocab.meanings:
+    note = dlg.getVocabNote()
+    if not note.vocab.meanings:
         anki.notify("No meanings specified")
         return
 
-    furigana = normalize_furigana(vocab.furigana.strip())
+    furigana = normalize_furigana(note.vocab.furigana.strip())
     if not furigana:
         anki.notify("No vocab specified")
         return
@@ -102,20 +174,20 @@ def openDialog(vocab: Vocab | None = None):
 
     # Check for duplicate vocabs
     if not anki.anyNotes(s.deck, s.note_type, (s.fields.word, word), (s.fields.reading, reading)):
-        note = {}
-        note[s.fields.word] = word
-        note[s.fields.reading] = reading
-        note[s.fields.furigana] = furigana
-        note[s.fields.meanings] = value_sep.join(vocab.meanings)
+        n = {}
+        n[s.fields.word] = word
+        n[s.fields.reading] = reading
+        n[s.fields.furigana] = furigana
+        n[s.fields.meanings] = value_sep.join(note.vocab.meanings)
 
-        if anki.uploadNote(note, s.deck, s.note_type):
+        if anki.uploadNote(n, s.deck, s.note_type, note.tags):
             anki.notify("Note added")
         else:
             anki.notify("Failed to add a note")
     else:
         anki.notify("Duplicate note")
 
-    if vocab.create_kanji:
+    if note.add_kanji:
         s = settings.kanji_notes
 
         all_kanji = set(map(lambda n: n[s.fields.kanji], anki.findNotes(s.deck, s.note_type)))

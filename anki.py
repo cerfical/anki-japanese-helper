@@ -18,6 +18,10 @@ def noteTypes() -> list[str]:
     return [n["name"] for n in mw.col.models.all()]
 
 
+def tags() -> list[str]:
+    return mw.col.tags.all()
+
+
 def anyNotes(deck: str, note_type: str, *fields: tuple[str, str]) -> bool:
     return len(findNotes(deck, note_type, *fields)) > 0
 
@@ -48,10 +52,13 @@ def findFields(note_type: str) -> list[str]:
     return field_names
 
 
-def uploadNote(note: Note, deck: str, note_type: str) -> bool:
+def uploadNote(note: Note, deck: str, note_type: str, tags: list[str]) -> bool:
     n = AnkiNote(mw.col, _noteTypeIdByName(note_type))
     for field, value in note.items():
         n[field] = value
+
+    for t in tags:
+        n.add_tag(t)
 
     deck_id = _deckIdByName(deck)
     if mw.col.add_note(n, deck_id):

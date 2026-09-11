@@ -113,3 +113,61 @@ class CounterChip(QFrame):
     count = pyqtProperty(int, fget=getCount, fset=setCount)
 
     remove = pyqtSignal()
+
+
+class TextChip(QFrame):
+    def __init__(self, text: str = "", parent: QWidget = None):
+        super().__init__(parent)
+
+        self._text = text
+
+        hbox = QHBoxLayout()
+        hbox.setContentsMargins(2, 2, 2, 2)
+        hbox.setSpacing(4)
+
+        self._label = QLabel(text)
+        self._label.setMargin(2)
+        self._label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hbox.addWidget(self._label)
+
+        del_button = QPushButton("×")
+        del_button.clicked.connect(self._onRemove)
+        hbox.addWidget(del_button)
+
+        self.setLayout(hbox)
+
+        self.setStyleSheet(f"""
+            QWidget {{
+                border: 1px solid {CHIP_BORDER_COLOR};
+                border-radius: 8px;
+                background-color: {CHIP_BG_COLOR};
+            }}
+
+            QLabel {{
+                padding: 1px 3px 1px 3px;
+            }}
+
+            QPushButton {{
+                background: transparent;
+                border: none;
+                padding: 0px;
+            }}
+
+            QPushButton:hover {{
+                color: {CHIP_HOVER_COLOR};
+            }}
+        """)
+
+    def getText(self) -> str:
+        return self._text
+
+    def setText(self, text: str):
+        self._text = text
+        self._label.setText(text)
+
+    def _onRemove(self):
+        self.remove.emit()
+
+    text = pyqtProperty(str, fget=getText, fset=setText)
+    remove = pyqtSignal()
