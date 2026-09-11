@@ -70,7 +70,7 @@ def parse_furigana(furigana: str) -> list[tuple[str, str]]:
 
 
 def normalize_furigana(furigana: str) -> str:
-    return re.sub(r"[\[(「]([^\]」)]+)[\]」)]", r"「\g<1>」", furigana)
+    return re.sub(r"[\[(「]([^\]」)]+)[\]」)]", r"[\g<1>]", furigana)
 
 
 def openDialog(vocab: Vocab | None = None):
