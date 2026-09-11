@@ -1,7 +1,3 @@
-import anki_japanese_helper.anki as anki
-import anki_japanese_helper.settings as settings
-import anki_japanese_helper.strutil as strutil
-from anki_japanese_helper.ui import ButtonChip, CounterChip, FlowLayout
 from PyQt6.QtCore import QByteArray, QObject, Qt, QUrl, pyqtSignal
 from PyQt6.QtNetwork import (QNetworkAccessManager, QNetworkReply,
                              QNetworkRequest)
@@ -10,6 +6,11 @@ from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFileDialog, QGroupBox,
                              QHBoxLayout, QLineEdit, QListWidget,
                              QPlainTextEdit, QScrollArea, QSizePolicy, QStyle,
                              QVBoxLayout, QWidget)
+
+import anki_japanese_helper.anki as anki
+import anki_japanese_helper.settings as settings
+import anki_japanese_helper.strutil as strutil
+from anki_japanese_helper.ui import ButtonChip, CounterChip
 
 NO_IMAGE_SVG = b"""
 <svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
@@ -142,16 +143,16 @@ class KanjiDialog(QDialog):
 
         # Kanji chips
         parts_widget = QWidget()
-        self._kanji_layout = FlowLayout(parts_widget)
+        self._parts_box = QVBoxLayout(parts_widget)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(parts_widget)
         parts_box.addWidget(scroll)
 
         # "Add component" chip
-        self._add_kanji_chip = ButtonChip("+")
-        self._add_kanji_chip.clicked.connect(self._showComponentPopup)
-        self._kanji_layout.addWidget(self._add_kanji_chip)
+        add_kanji_chip = ButtonChip("+")
+        add_kanji_chip.clicked.connect(self._showComponentPopup)
+        parts_box.addWidget(add_kanji_chip)
 
         # OK/Cancel buttons
         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -232,14 +233,11 @@ class KanjiDialog(QDialog):
     def _createKanjiChip(self, kanji: Kanji):
         chip = CounterChip(f"{kanji}")
 
-        # Remove the "add component" chip and add it back later to the end of the list
-        self._kanji_layout.takeAt(self._kanji_layout.count() - 1)
-        self._kanji_layout.addWidget(chip)
-        self._kanji_layout.addWidget(self._add_kanji_chip)
+        self._parts_box.addWidget(chip)
         self._kanji_parts.append((kanji, chip))
 
         def delete_chip(k=kanji, c=chip):
-            self._kanji_layout.removeWidget(c)
+            self._parts_box.removeWidget(c)
             c.deleteLater()
             self._kanji_parts.remove((k, c))
 

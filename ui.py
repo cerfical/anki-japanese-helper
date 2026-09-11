@@ -1,70 +1,11 @@
-from PyQt6.QtCore import QPoint, QRect, QSize, Qt, pyqtProperty, pyqtSignal
-from PyQt6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QLayout, QLayoutItem,
-                             QPushButton, QWidget)
+from PyQt6.QtCore import Qt, pyqtProperty, pyqtSignal
+from PyQt6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QPushButton,
+                             QSizePolicy, QWidget)
 
 CHIP_BG_COLOR = "#3A3A3A"
 CHIP_BORDER_COLOR = "#555555"
 CHIP_HOVER_COLOR = "#808080"
 CHIP_TEXT_COLOR = "#FFFFFF"
-
-
-class FlowLayout(QLayout):
-    def __init__(self, parent: QWidget = None):
-        super().__init__(parent)
-        self._items = []
-
-    def addItem(self, item: QLayoutItem):
-        self._items.append(item)
-
-    def count(self) -> int:
-        return len(self._items)
-
-    def itemAt(self, idx: int) -> QLayoutItem:
-        return self._items[idx] if 0 <= idx < len(self._items) else None
-
-    def takeAt(self, idx: int) -> QLayoutItem:
-        return self._items.pop(idx) if 0 <= idx < len(self._items) else None
-
-    def expandingDirections(self) -> Qt.Orientation:
-        return Qt.Orientation(Qt.Orientation(0))
-
-    def hasHeightForWidth(self) -> bool:
-        return True
-
-    def heightForWidth(self, width: int) -> int:
-        return self.doLayout(QRect(0, 0, width, 0), True)
-
-    def setGeometry(self, rect: QRect):
-        super().setGeometry(rect)
-        self.doLayout(rect, False)
-
-    def sizeHint(self) -> QSize:
-        return self.minimumSize()
-
-    def minimumSize(self) -> QSize:
-        size = QSize()
-        for item in self._items:
-            size = size.expandedTo(item.minimumSize())
-        margins = self.contentsMargins()
-        size += QSize(margins.left() + margins.right(), margins.top() + margins.bottom())
-        return size
-
-    def doLayout(self, rect: QRect, testOnly: bool) -> int:
-        x, y, lineHeight = rect.x(), rect.y(), 0
-        for item in self._items:
-            widget = item.widget()
-            spaceX, spaceY = self.spacing(), self.spacing()
-            nextX = x + widget.sizeHint().width() + spaceX
-            if nextX - spaceX > rect.right() and lineHeight > 0:
-                x = rect.x()
-                y += lineHeight + spaceY
-                nextX = x + widget.sizeHint().width() + spaceX
-                lineHeight = 0
-            if not testOnly:
-                item.setGeometry(QRect(QPoint(x, y), widget.sizeHint()))
-            x = nextX
-            lineHeight = max(lineHeight, widget.sizeHint().height())
-        return y + lineHeight - rect.y()
 
 
 class ButtonChip(QPushButton):
@@ -93,25 +34,27 @@ class CounterChip(QFrame):
         self._text = text
 
         hbox = QHBoxLayout()
-        hbox.setContentsMargins(6, 2, 6, 2)
+        hbox.setContentsMargins(2, 2, 2, 2)
         hbox.setSpacing(4)
 
         self._label = QLabel(text)
+        self._label.setMargin(2)
+        self._label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         hbox.addWidget(self._label)
-
-        plus_btn = QPushButton("+")
-        plus_btn.clicked.connect(self._onIncrement)
-        hbox.addWidget(plus_btn)
 
         minus_btn = QPushButton("-")
         minus_btn.clicked.connect(self._onDecrement)
         hbox.addWidget(minus_btn)
 
+        plus_btn = QPushButton("+")
+        plus_btn.clicked.connect(self._onIncrement)
+        hbox.addWidget(plus_btn)
+
         del_button = QPushButton("×")
         del_button.clicked.connect(self._onRemove)
         hbox.addWidget(del_button)
 
-        hbox.addStretch()
         self.setLayout(hbox)
 
         self.setStyleSheet(f"""
