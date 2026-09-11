@@ -15,7 +15,7 @@ class Vocab:
         self.create_kanji = create_kanji
 
 
-class AddVocabDialog(QDialog):
+class VocabDialog(QDialog):
     def __init__(self, vocab: Vocab | None = None, parent: QWidget = None):
         super().__init__(parent)
 
@@ -74,7 +74,7 @@ def normalize_furigana(furigana: str) -> str:
 
 
 def openDialog(vocab: Vocab | None = None):
-    dlg = AddVocabDialog(vocab)
+    dlg = VocabDialog(vocab)
     if not dlg.exec():
         return
 

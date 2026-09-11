@@ -38,7 +38,7 @@ class Kanji:
         return self.char < other.char
 
 
-class KanjiPart:
+class KanjiComponent:
     def __init__(self, kanji: Kanji, count: int):
         self.kanji = kanji
         self.count = count
@@ -54,9 +54,9 @@ class KanjiPart:
 
 
 class KanjiNote:
-    def __init__(self, kanji: Kanji, parts: list[KanjiPart], strokes: bytes):
+    def __init__(self, kanji: Kanji, components: list[KanjiComponent], strokes: bytes):
         self.kanji = kanji
-        self.parts = parts
+        self.components = components
         self.strokes = strokes
 
 
@@ -90,7 +90,7 @@ class KanjiDialog(QDialog):
     def __init__(self, kanji: Kanji | None = None, parent: QWidget = None):
         super().__init__(parent)
 
-        self._kanji_parts = []
+        self._component_chips = []
         self._kanji = self._loadKanji()
         self._kanji_url = settings.kanji_notes.kanji_url
 
@@ -137,22 +137,22 @@ class KanjiDialog(QDialog):
             self._kanji_edit.setText(kanji.char)
             self._meanings_edit.setPlainText("\n".join(kanji.meanings))
 
-        parts_grp = QGroupBox("Components")
-        parts_box = QVBoxLayout(parts_grp)
-        layout.addWidget(parts_grp)
+        components_grp = QGroupBox("Components")
+        components_box = QVBoxLayout(components_grp)
+        layout.addWidget(components_grp)
 
         # Kanji chips
-        parts_widget = QWidget()
-        self._parts_box = QVBoxLayout(parts_widget)
+        components_widget = QWidget()
+        self._components_box = QVBoxLayout(components_widget)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setWidget(parts_widget)
-        parts_box.addWidget(scroll)
+        scroll.setWidget(components_widget)
+        components_box.addWidget(scroll)
 
         # "Add component" chip
-        add_kanji_chip = ButtonChip("+")
-        add_kanji_chip.clicked.connect(self._showComponentPopup)
-        parts_box.addWidget(add_kanji_chip)
+        btn = ButtonChip("+")
+        btn.clicked.connect(self._showComponentsPopup)
+        components_box.addWidget(btn)
 
         # OK/Cancel buttons
         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -186,7 +186,7 @@ class KanjiDialog(QDialog):
         self._kanji_svg_widget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
         self._kanji_svg = svg_bytes
 
-    def _showComponentPopup(self):
+    def _showComponentsPopup(self):
         if not self._kanji:
             anki.notify("No kanji found")
             return
@@ -233,26 +233,26 @@ class KanjiDialog(QDialog):
     def _createKanjiChip(self, kanji: Kanji):
         chip = CounterChip(f"{kanji}")
 
-        self._parts_box.addWidget(chip)
-        self._kanji_parts.append((kanji, chip))
+        self._components_box.addWidget(chip)
+        self._component_chips.append((kanji, chip))
 
         def delete_chip(k=kanji, c=chip):
-            self._parts_box.removeWidget(c)
+            self._components_box.removeWidget(c)
             c.deleteLater()
-            self._kanji_parts.remove((k, c))
+            self._component_chips.remove((k, c))
 
         chip.remove.connect(delete_chip)
 
     def getKanjiNote(self) -> KanjiNote:
-        parts = []
-        for kanji, counter in self._kanji_parts:
-            parts.append(KanjiPart(kanji, counter.count))
+        components = []
+        for kanji, counter in self._component_chips:
+            components.append(KanjiComponent(kanji, counter.count))
 
         kanji_char = self._kanji_edit.text()
         meanings = strutil.parseList(self._meanings_edit.toPlainText(), "\n")
         kanji = Kanji(kanji_char, meanings)
 
-        return KanjiNote(kanji, parts, self._kanji_svg)
+        return KanjiNote(kanji, components, self._kanji_svg)
 
 
 def openDialog(kanji: Kanji | None = None):
@@ -277,7 +277,7 @@ def openDialog(kanji: Kanji | None = None):
     n = {}
     n[s.fields.kanji] = note.kanji.char.strip()
     n[s.fields.meanings] = value_sep.join(note.kanji.meanings)
-    n[s.fields.components] = value_sep.join(map(str, note.parts))
+    n[s.fields.components] = value_sep.join(map(str, note.components))
     n[s.fields.strokes] = f"<img src='{strokes_svg}'>"
 
     if anki.uploadNote(n, s.deck, s.note_type):
