@@ -56,6 +56,7 @@ class VocabDialog(QDialog):
         # Tag chips
         tags_widget = QWidget()
         self._tags_box = QVBoxLayout(tags_widget)
+        self._tags_box.setAlignment(Qt.AlignmentFlag.AlignTop)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(tags_widget)

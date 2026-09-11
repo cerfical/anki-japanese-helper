@@ -39,7 +39,7 @@ class CounterChip(QFrame):
 
         self._label = QLabel(text)
         self._label.setMargin(2)
-        self._label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         hbox.addWidget(self._label)
 
@@ -127,7 +127,7 @@ class TextChip(QFrame):
 
         self._label = QLabel(text)
         self._label.setMargin(2)
-        self._label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         hbox.addWidget(self._label)
 

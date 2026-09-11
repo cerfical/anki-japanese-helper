@@ -144,6 +144,7 @@ class KanjiDialog(QDialog):
         # Kanji chips
         components_widget = QWidget()
         self._components_box = QVBoxLayout(components_widget)
+        self._components_box.setAlignment(Qt.AlignmentFlag.AlignTop)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(components_widget)
