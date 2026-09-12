@@ -142,6 +142,12 @@ class KanjiDialog(NoteDialog):
         components_box = QVBoxLayout(components_grp)
         layout.addWidget(components_grp)
 
+        # Get rid of the excessive space at the bottom
+        margins = components_box.contentsMargins()
+        margins.setTop(0)
+        margins.setBottom(0)
+        components_box.setContentsMargins(margins)
+
         # Kanji chips
         components_widget = QWidget()
         self._components_box = QVBoxLayout(components_widget)

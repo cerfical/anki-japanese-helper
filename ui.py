@@ -24,6 +24,12 @@ class NoteDialog(QDialog):
         tags_box = QVBoxLayout(tags_grp)
         main_layout.addWidget(tags_grp)
 
+        # Get rid of the excessive space at the bottom
+        margins = tags_box.contentsMargins()
+        margins.setTop(0)
+        margins.setBottom(0)
+        tags_box.setContentsMargins(margins)
+
         # Tag chips
         tags_widget = QWidget()
         self._tags_box = QVBoxLayout(tags_widget)
@@ -70,6 +76,7 @@ class NoteDialog(QDialog):
         chip.remove.connect(delete_chip)
 
     def setContentLayout(self, layout: QLayout):
+        layout.setContentsMargins(0, 0, 0, 0)
         self._content.setLayout(layout)
 
     def getNoteTags(self) -> list[str]:
