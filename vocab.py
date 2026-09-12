@@ -27,29 +27,28 @@ class VocabDialog(NoteDialog):
     def __init__(self, vocab: Vocab | None = None, parent: QWidget = None):
         super().__init__("Add Vocab", anki.tags(), parent)
 
-        layout = QVBoxLayout()
+        vbox_widget = QWidget()
+        vbox = QVBoxLayout(vbox_widget)
+        self.contents().insertWidget(0, vbox_widget)
 
         self._furigana_edit = QLineEdit()
         self._furigana_edit.setPlaceholderText("Vocab, e.g., 折「お」り紙「がみ」")
         self._furigana_edit.setFocus()
-        layout.addWidget(self._furigana_edit)
+        vbox.addWidget(self._furigana_edit)
 
         self._meanings_edit = QPlainTextEdit()
         self._meanings_edit.setPlaceholderText("Meanings")
-        self._meanings_edit.setFixedHeight(self._meanings_edit.fontMetrics().lineSpacing() * 4)
         self._meanings_edit.setTabChangesFocus(True)
-        layout.addWidget(self._meanings_edit)
-
-        if vocab:
-            self._furigana_edit.setText(vocab.furigana)
-            self._meanings_edit.setPlainText("\n".join(vocab.meanings))
+        vbox.addWidget(self._meanings_edit)
 
         self._add_kanji_check = QCheckBox()
         self._add_kanji_check.setText("Add Kanji")
         self._add_kanji_check.setChecked(True)
-        layout.addWidget(self._add_kanji_check)
+        vbox.addWidget(self._add_kanji_check)
 
-        self.setContentLayout(layout)
+        if vocab:
+            self._furigana_edit.setText(vocab.furigana)
+            self._meanings_edit.setPlainText("\n".join(vocab.meanings))
 
     def getVocabNote(self) -> VocabNote:
         furigana = self._furigana_edit.text()

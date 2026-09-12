@@ -95,10 +95,50 @@ class KanjiDialog(NoteDialog):
         self._kanji = self._loadKanji()
         self._kanji_url = settings.kanji_notes.kanji_url
 
-        layout = QVBoxLayout()
+        components_grp = QGroupBox("Components")
+        components_box = QVBoxLayout(components_grp)
+        self.contents().insertWidget(0, components_grp)
 
-        hbox = QHBoxLayout()
-        layout.addLayout(hbox)
+        # Get rid of the excessive space at the bottom
+        margins = components_box.contentsMargins()
+        margins.setTop(0)
+        margins.setBottom(0)
+        components_box.setContentsMargins(margins)
+
+        # Kanji chips
+        components_widget = QWidget()
+        self._components_box = QVBoxLayout(components_widget)
+        self._components_box.setAlignment(Qt.AlignmentFlag.AlignTop)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(components_widget)
+        components_box.addWidget(scroll)
+
+        # "Add component" chip
+        btn = ButtonChip("+")
+        btn.clicked.connect(self._showComponentsPopup)
+        components_box.addWidget(btn)
+
+        # New kanji info
+        vbox_widget = QWidget()
+        vbox = QVBoxLayout(vbox_widget)
+        self.contents().insertWidget(0, vbox_widget)
+
+        self._kanji_edit = QLineEdit()
+        self._kanji_edit.textChanged.connect(self._loadKanjiSvg)
+        self._kanji_edit.setPlaceholderText("Kanji")
+        self._kanji_edit.setFocus()
+        vbox.addWidget(self._kanji_edit)
+
+        self._meanings_edit = QPlainTextEdit()
+        self._meanings_edit.setPlaceholderText("Meanings")
+        self._meanings_edit.setTabChangesFocus(True)
+        vbox.addWidget(self._meanings_edit)
+
+        # Kanji image
+        hbox_widget = QWidget()
+        hbox = QHBoxLayout(hbox_widget)
+        self.contents().insertWidget(0, hbox_widget)
 
         self._kanji_svg_widget = QSvgWidget()
         self._kanji_svg_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -121,48 +161,9 @@ class KanjiDialog(NoteDialog):
         open_btn.clicked.connect(self._chooseKanjiSvg)
         vbox.addWidget(open_btn)
 
-        # New kanji info
-        self._kanji_edit = QLineEdit()
-        self._kanji_edit.textChanged.connect(self._loadKanjiSvg)
-        self._kanji_edit.setPlaceholderText("Kanji")
-        self._kanji_edit.setFocus()
-        layout.addWidget(self._kanji_edit)
-
-        self._meanings_edit = QPlainTextEdit()
-        self._meanings_edit.setPlaceholderText("Meanings")
-        self._meanings_edit.setFixedHeight(self._meanings_edit.fontMetrics().lineSpacing() * 4)
-        self._meanings_edit.setTabChangesFocus(True)
-        layout.addWidget(self._meanings_edit)
-
         if kanji:
             self._kanji_edit.setText(kanji.char)
             self._meanings_edit.setPlainText("\n".join(kanji.meanings))
-
-        components_grp = QGroupBox("Components")
-        components_box = QVBoxLayout(components_grp)
-        layout.addWidget(components_grp)
-
-        # Get rid of the excessive space at the bottom
-        margins = components_box.contentsMargins()
-        margins.setTop(0)
-        margins.setBottom(0)
-        components_box.setContentsMargins(margins)
-
-        # Kanji chips
-        components_widget = QWidget()
-        self._components_box = QVBoxLayout(components_widget)
-        self._components_box.setAlignment(Qt.AlignmentFlag.AlignTop)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(components_widget)
-        components_box.addWidget(scroll)
-
-        # "Add component" chip
-        btn = ButtonChip("+")
-        btn.clicked.connect(self._showComponentsPopup)
-        components_box.addWidget(btn)
-
-        self.setContentLayout(layout)
 
     def _loadKanjiSvg(self):
         kanji = self._kanji_edit.text().strip()

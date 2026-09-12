@@ -1,8 +1,8 @@
 from PyQt6.QtCore import Qt, pyqtProperty, pyqtSignal
 from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFrame, QGroupBox,
-                             QHBoxLayout, QLabel, QLayout, QLineEdit,
-                             QListWidget, QPushButton, QScrollArea,
-                             QSizePolicy, QVBoxLayout, QWidget)
+                             QHBoxLayout, QLabel, QLineEdit, QListWidget,
+                             QPushButton, QScrollArea, QSizePolicy, QSplitter,
+                             QVBoxLayout, QWidget)
 
 CHIP_BG_COLOR = "#3A3A3A"
 CHIP_BORDER_COLOR = "#555555"
@@ -15,14 +15,13 @@ class NoteDialog(QDialog):
         super().__init__(parent)
 
         self.setWindowTitle(title)
+        self._contents = QSplitter(Qt.Orientation.Vertical)
         main_layout = QVBoxLayout()
-
-        self._content = QWidget()
-        main_layout.addWidget(self._content)
+        main_layout.addWidget(self._contents)
 
         tags_grp = QGroupBox("Tags")
         tags_box = QVBoxLayout(tags_grp)
-        main_layout.addWidget(tags_grp)
+        self._contents.addWidget(tags_grp)
 
         # Get rid of the excessive space at the bottom
         margins = tags_box.contentsMargins()
@@ -75,9 +74,8 @@ class NoteDialog(QDialog):
 
         chip.remove.connect(delete_chip)
 
-    def setContentLayout(self, layout: QLayout):
-        layout.setContentsMargins(0, 0, 0, 0)
-        self._content.setLayout(layout)
+    def contents(self) -> QWidget:
+        return self._contents
 
     def getNoteTags(self) -> list[str]:
         return self._tags
