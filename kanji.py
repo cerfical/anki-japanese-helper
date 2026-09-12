@@ -3,14 +3,14 @@ from PyQt6.QtNetwork import (QNetworkAccessManager, QNetworkReply,
                              QNetworkRequest)
 from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFileDialog, QGroupBox,
-                             QHBoxLayout, QLineEdit, QListWidget,
-                             QPlainTextEdit, QScrollArea, QSizePolicy, QStyle,
-                             QVBoxLayout, QWidget)
+                             QHBoxLayout, QLineEdit, QPlainTextEdit,
+                             QScrollArea, QSizePolicy, QStyle, QVBoxLayout,
+                             QWidget)
 
 import anki_japanese_helper.anki as anki
 import anki_japanese_helper.settings as settings
 import anki_japanese_helper.strutil as strutil
-from anki_japanese_helper.ui import ButtonChip, CounterChip
+from anki_japanese_helper.ui import ButtonChip, CounterChip, SelectionDialog
 
 NO_IMAGE_SVG = b"""
 <svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
@@ -192,35 +192,11 @@ class KanjiDialog(QDialog):
             anki.notify("No kanji found")
             return
 
-        dlg = QDialog(self)
-        dlg.setWindowTitle("Add Component")
-        dlg.setWindowFlags(Qt.WindowType.Popup)
+        dlg = SelectionDialog("Add Component", map(str, self._kanji), self)
+        selected_idx = dlg.exec()
 
-        layout = QVBoxLayout(dlg)
-
-        search = QLineEdit()
-        search.setPlaceholderText("Search for...")
-        layout.addWidget(search)
-
-        list_widget = QListWidget()
-        list_widget.addItems(map(str, self._kanji))
-        layout.addWidget(list_widget)
-
-        def filter_items(text):
-            for i in range(list_widget.count()):
-                item = list_widget.item(i)
-                item.setHidden(text.lower() not in item.text().lower())
-
-        search.textChanged.connect(filter_items)
-        search.setFocus()
-
-        def item_selected(item):
-            k = self._kanji[list_widget.row(item)]
-            self._createKanjiChip(k)
-            dlg.close()
-
-        list_widget.itemClicked.connect(item_selected)
-        dlg.exec()
+        k = self._kanji[selected_idx]
+        self._createKanjiChip(k)
 
     def _loadKanji(self) -> list[Kanji]:
         value_sep = settings.general.value_sep

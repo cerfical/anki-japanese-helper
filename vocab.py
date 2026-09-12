@@ -2,14 +2,14 @@ import re
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QGroupBox,
-                             QHBoxLayout, QLineEdit, QListWidget,
-                             QPlainTextEdit, QScrollArea, QVBoxLayout, QWidget)
+                             QHBoxLayout, QLineEdit, QPlainTextEdit,
+                             QScrollArea, QVBoxLayout, QWidget)
 
 import anki_japanese_helper.anki as anki
 import anki_japanese_helper.kanji as kanji
 import anki_japanese_helper.settings as settings
 import anki_japanese_helper.strutil as strutil
-from anki_japanese_helper.ui import ButtonChip, TextChip
+from anki_japanese_helper.ui import ButtonChip, SelectionDialog, TextChip
 
 
 class Vocab:
@@ -94,35 +94,11 @@ class VocabDialog(QDialog):
         return VocabNote(vocab, self._tags, add_kanji)
 
     def _showTagsPopup(self):
-        dlg = QDialog(self)
-        dlg.setWindowTitle("Add Tag")
-        dlg.setWindowFlags(Qt.WindowType.Popup)
+        dlg = SelectionDialog("Add Tag", self._all_tags, self)
+        selected_idx = dlg.exec()
 
-        layout = QVBoxLayout(dlg)
-
-        search = QLineEdit()
-        search.setPlaceholderText("Search for...")
-        layout.addWidget(search)
-
-        list_widget = QListWidget()
-        list_widget.addItems(self._all_tags)
-        layout.addWidget(list_widget)
-
-        def filter_items(text):
-            for i in range(list_widget.count()):
-                item = list_widget.item(i)
-                item.setHidden(text.lower() not in item.text().lower())
-
-        search.textChanged.connect(filter_items)
-        search.setFocus()
-
-        def item_selected(item):
-            t = self._all_tags[list_widget.row(item)]
-            self._createTagChip(t)
-            dlg.close()
-
-        list_widget.itemClicked.connect(item_selected)
-        dlg.exec()
+        t = self._all_tags[selected_idx]
+        self._createTagChip(t)
 
     def _createTagChip(self, tag: str):
         chip = TextChip(tag)

@@ -1,11 +1,43 @@
 from PyQt6.QtCore import Qt, pyqtProperty, pyqtSignal
-from PyQt6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QPushButton,
-                             QSizePolicy, QWidget)
+from PyQt6.QtWidgets import (QDialog, QFrame, QHBoxLayout, QLabel, QLineEdit,
+                             QListWidget, QPushButton, QSizePolicy,
+                             QVBoxLayout, QWidget)
 
 CHIP_BG_COLOR = "#3A3A3A"
 CHIP_BORDER_COLOR = "#555555"
 CHIP_HOVER_COLOR = "#808080"
 CHIP_TEXT_COLOR = "#FFFFFF"
+
+
+class SelectionDialog(QDialog):
+    def __init__(self, title: str, items: list[str], parent: QWidget = None):
+        super().__init__(parent)
+
+        self.setWindowTitle(title)
+        self.setWindowFlags(Qt.WindowType.Popup)
+
+        layout = QVBoxLayout(self)
+
+        search = QLineEdit()
+        search.setPlaceholderText("Search for...")
+        layout.addWidget(search)
+
+        list_widget = QListWidget()
+        list_widget.addItems(items)
+        layout.addWidget(list_widget)
+
+        def filter_items(text):
+            for i in range(list_widget.count()):
+                item = list_widget.item(i)
+                item.setHidden(text.lower() not in item.text().lower())
+
+        search.textChanged.connect(filter_items)
+        search.setFocus()
+
+        def item_selected(item):
+            selected_idx = list_widget.row(item)
+            self.done(selected_idx)
+        list_widget.itemClicked.connect(item_selected)
 
 
 class ButtonChip(QPushButton):
