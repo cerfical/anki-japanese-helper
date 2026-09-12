@@ -2,15 +2,15 @@ from PyQt6.QtCore import QByteArray, QObject, Qt, QUrl, pyqtSignal
 from PyQt6.QtNetwork import (QNetworkAccessManager, QNetworkReply,
                              QNetworkRequest)
 from PyQt6.QtSvgWidgets import QSvgWidget
-from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFileDialog, QGroupBox,
-                             QHBoxLayout, QLineEdit, QPlainTextEdit,
-                             QScrollArea, QSizePolicy, QStyle, QVBoxLayout,
-                             QWidget)
+from PyQt6.QtWidgets import (QFileDialog, QGroupBox, QHBoxLayout, QLineEdit,
+                             QPlainTextEdit, QScrollArea, QSizePolicy, QStyle,
+                             QVBoxLayout, QWidget)
 
 import anki_japanese_helper.anki as anki
 import anki_japanese_helper.settings as settings
 import anki_japanese_helper.strutil as strutil
-from anki_japanese_helper.ui import ButtonChip, CounterChip, SelectionDialog
+from anki_japanese_helper.ui import (ButtonChip, CounterChip, NoteDialog,
+                                     SelectionDialog)
 
 NO_IMAGE_SVG = b"""
 <svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
@@ -54,10 +54,11 @@ class KanjiComponent:
 
 
 class KanjiNote:
-    def __init__(self, kanji: Kanji, components: list[KanjiComponent], strokes: bytes):
+    def __init__(self, kanji: Kanji, components: list[KanjiComponent], strokes: bytes, tags: list[str]):
         self.kanji = kanji
         self.components = components
         self.strokes = strokes
+        self.tags = tags
 
 
 class SvgLoader(QObject):
@@ -86,15 +87,14 @@ class SvgLoader(QObject):
     finished = pyqtSignal(bytes)
 
 
-class KanjiDialog(QDialog):
+class KanjiDialog(NoteDialog):
     def __init__(self, kanji: Kanji | None = None, parent: QWidget = None):
-        super().__init__(parent)
+        super().__init__("Add Kanji", anki.tags(), parent)
 
         self._component_chips = []
         self._kanji = self._loadKanji()
         self._kanji_url = settings.kanji_notes.kanji_url
 
-        self.setWindowTitle("Add Kanji")
         layout = QVBoxLayout()
 
         hbox = QHBoxLayout()
@@ -125,6 +125,7 @@ class KanjiDialog(QDialog):
         self._kanji_edit = QLineEdit()
         self._kanji_edit.textChanged.connect(self._loadKanjiSvg)
         self._kanji_edit.setPlaceholderText("Kanji")
+        self._kanji_edit.setFocus()
         layout.addWidget(self._kanji_edit)
 
         self._meanings_edit = QPlainTextEdit()
@@ -155,14 +156,7 @@ class KanjiDialog(QDialog):
         btn.clicked.connect(self._showComponentsPopup)
         components_box.addWidget(btn)
 
-        # OK/Cancel buttons
-        btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        btns.accepted.connect(self.accept)
-        btns.rejected.connect(self.reject)
-        layout.addWidget(btns)
-
-        self.setLayout(layout)
-        self._kanji_edit.setFocus()
+        self.setContentLayout(layout)
 
     def _loadKanjiSvg(self):
         kanji = self._kanji_edit.text().strip()
@@ -229,7 +223,7 @@ class KanjiDialog(QDialog):
         meanings = strutil.parseList(self._meanings_edit.toPlainText(), "\n")
         kanji = Kanji(kanji_char, meanings)
 
-        return KanjiNote(kanji, components, self._kanji_svg)
+        return KanjiNote(kanji, components, self._kanji_svg, self.getNoteTags())
 
 
 def openDialog(kanji: Kanji | None = None):
@@ -257,7 +251,7 @@ def openDialog(kanji: Kanji | None = None):
     n[s.fields.components] = value_sep.join(map(str, note.components))
     n[s.fields.strokes] = f"<img src='{strokes_svg}'>"
 
-    if anki.uploadNote(n, s.deck, s.note_type, []):
+    if anki.uploadNote(n, s.deck, s.note_type, note.tags):
         anki.notify("Note added")
     else:
         anki.notify("Failed to add a note")

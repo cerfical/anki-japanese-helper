@@ -1,12 +1,79 @@
 from PyQt6.QtCore import Qt, pyqtProperty, pyqtSignal
-from PyQt6.QtWidgets import (QDialog, QFrame, QHBoxLayout, QLabel, QLineEdit,
-                             QListWidget, QPushButton, QSizePolicy,
-                             QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFrame, QGroupBox,
+                             QHBoxLayout, QLabel, QLayout, QLineEdit,
+                             QListWidget, QPushButton, QScrollArea,
+                             QSizePolicy, QVBoxLayout, QWidget)
 
 CHIP_BG_COLOR = "#3A3A3A"
 CHIP_BORDER_COLOR = "#555555"
 CHIP_HOVER_COLOR = "#808080"
 CHIP_TEXT_COLOR = "#FFFFFF"
+
+
+class NoteDialog(QDialog):
+    def __init__(self, title: str, tags: list[str], parent: QWidget = None):
+        super().__init__(parent)
+
+        self.setWindowTitle(title)
+        main_layout = QVBoxLayout()
+
+        self._content = QWidget()
+        main_layout.addWidget(self._content)
+
+        tags_grp = QGroupBox("Tags")
+        tags_box = QVBoxLayout(tags_grp)
+        main_layout.addWidget(tags_grp)
+
+        # Tag chips
+        tags_widget = QWidget()
+        self._tags_box = QVBoxLayout(tags_widget)
+        self._tags_box.setAlignment(Qt.AlignmentFlag.AlignTop)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(tags_widget)
+        tags_box.addWidget(scroll)
+
+        # "Add tag" chip
+        btn = ButtonChip("+")
+        btn.clicked.connect(self._showTagsPopup)
+        tags_box.addWidget(btn)
+
+        # OK/Cancel buttons
+        btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        btns.accepted.connect(self.accept)
+        btns.rejected.connect(self.reject)
+        main_layout.addWidget(btns)
+
+        self.setLayout(main_layout)
+
+        self._all_tags = tags
+        self._tags = []
+
+    def _showTagsPopup(self):
+        dlg = SelectionDialog("Add Tag", self._all_tags, self)
+        selected_idx = dlg.exec()
+
+        t = self._all_tags[selected_idx]
+        self._createTagChip(t)
+
+    def _createTagChip(self, tag: str):
+        chip = TextChip(tag)
+
+        self._tags_box.addWidget(chip)
+        self._tags.append(tag)
+
+        def delete_chip(t=tag, c=chip):
+            self._tags_box.removeWidget(c)
+            c.deleteLater()
+            self._tags.remove(t)
+
+        chip.remove.connect(delete_chip)
+
+    def setContentLayout(self, layout: QLayout):
+        self._content.setLayout(layout)
+
+    def getNoteTags(self) -> list[str]:
+        return self._tags
 
 
 class SelectionDialog(QDialog):

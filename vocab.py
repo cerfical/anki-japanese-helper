@@ -1,15 +1,13 @@
 import re
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QGroupBox,
-                             QHBoxLayout, QLineEdit, QPlainTextEdit,
-                             QScrollArea, QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (QCheckBox, QLineEdit, QPlainTextEdit, QVBoxLayout,
+                             QWidget)
 
 import anki_japanese_helper.anki as anki
 import anki_japanese_helper.kanji as kanji
 import anki_japanese_helper.settings as settings
 import anki_japanese_helper.strutil as strutil
-from anki_japanese_helper.ui import ButtonChip, SelectionDialog, TextChip
+from anki_japanese_helper.ui import NoteDialog
 
 
 class Vocab:
@@ -19,25 +17,22 @@ class Vocab:
 
 
 class VocabNote:
-    def __init__(self, vocab: Vocab, tags: list[str], add_kanji: bool):
+    def __init__(self, vocab: Vocab,  add_kanji: bool, tags: list[str]):
         self.vocab = vocab
-        self.tags = tags
         self.add_kanji = add_kanji
+        self.tags = tags
 
 
-class VocabDialog(QDialog):
+class VocabDialog(NoteDialog):
     def __init__(self, vocab: Vocab | None = None, parent: QWidget = None):
-        super().__init__(parent)
+        super().__init__("Add Vocab", anki.tags(), parent)
 
-        self.setWindowTitle("Add Vocab")
         layout = QVBoxLayout()
-
-        hbox = QHBoxLayout()
-        layout.addLayout(hbox)
 
         self._furigana_edit = QLineEdit()
         self._furigana_edit.setPlaceholderText("Vocab, e.g., 折「お」り紙「がみ」")
-        hbox.addWidget(self._furigana_edit)
+        self._furigana_edit.setFocus()
+        layout.addWidget(self._furigana_edit)
 
         self._meanings_edit = QPlainTextEdit()
         self._meanings_edit.setPlaceholderText("Meanings")
@@ -49,40 +44,12 @@ class VocabDialog(QDialog):
             self._furigana_edit.setText(vocab.furigana)
             self._meanings_edit.setPlainText("\n".join(vocab.meanings))
 
-        tags_grp = QGroupBox("Tags")
-        tags_box = QVBoxLayout(tags_grp)
-        layout.addWidget(tags_grp)
-
-        # Tag chips
-        tags_widget = QWidget()
-        self._tags_box = QVBoxLayout(tags_widget)
-        self._tags_box.setAlignment(Qt.AlignmentFlag.AlignTop)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(tags_widget)
-        tags_box.addWidget(scroll)
-
-        # "Add tag" chip
-        btn = ButtonChip("+")
-        btn.clicked.connect(self._showTagsPopup)
-        tags_box.addWidget(btn)
-
         self._add_kanji_check = QCheckBox()
         self._add_kanji_check.setText("Add Kanji")
         self._add_kanji_check.setChecked(True)
         layout.addWidget(self._add_kanji_check)
 
-        # OK/Cancel buttons
-        btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        btns.accepted.connect(self.accept)
-        btns.rejected.connect(self.reject)
-        layout.addWidget(btns)
-
-        self._all_tags = anki.tags()
-        self._tags = []
-
-        self.setLayout(layout)
-        self._furigana_edit.setFocus()
+        self.setContentLayout(layout)
 
     def getVocabNote(self) -> VocabNote:
         furigana = self._furigana_edit.text()
@@ -91,27 +58,7 @@ class VocabDialog(QDialog):
         add_kanji = self._add_kanji_check.isChecked()
         vocab = Vocab(furigana, meanings)
 
-        return VocabNote(vocab, self._tags, add_kanji)
-
-    def _showTagsPopup(self):
-        dlg = SelectionDialog("Add Tag", self._all_tags, self)
-        selected_idx = dlg.exec()
-
-        t = self._all_tags[selected_idx]
-        self._createTagChip(t)
-
-    def _createTagChip(self, tag: str):
-        chip = TextChip(tag)
-
-        self._tags_box.addWidget(chip)
-        self._tags.append(tag)
-
-        def delete_chip(t=tag, c=chip):
-            self._tags_box.removeWidget(c)
-            c.deleteLater()
-            self._tags.remove(t)
-
-        chip.remove.connect(delete_chip)
+        return VocabNote(vocab, add_kanji, self.getNoteTags())
 
 
 def parse_furigana(furigana: str) -> list[tuple[str, str]]:
