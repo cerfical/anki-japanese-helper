@@ -92,7 +92,7 @@ def openDialog(vocab: Vocab | None = None):
             reading += c
         word += c
 
-    value_sep = settings.general.value_sep
+    value_delim = settings.general.value_delimiter
     s = settings.vocab_notes
 
     # Check for duplicate vocabs
@@ -101,7 +101,7 @@ def openDialog(vocab: Vocab | None = None):
         n[s.fields.word] = word
         n[s.fields.reading] = reading
         n[s.fields.furigana] = furigana
-        n[s.fields.meanings] = value_sep.join(note.vocab.meanings)
+        n[s.fields.meanings] = value_delim.join(note.vocab.meanings)
 
         if anki.uploadNote(n, s.deck, s.note_type, note.tags):
             anki.notify("Note added")

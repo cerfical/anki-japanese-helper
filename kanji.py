@@ -93,7 +93,7 @@ class KanjiDialog(NoteDialog):
 
         self._component_chips = []
         self._kanji = self._loadKanji()
-        self._kanji_url = settings.kanji_notes.kanji_url
+        self._kanji_url = settings.kanji_notes.image_url
 
         components_grp = QGroupBox("Components")
         components_box = QVBoxLayout(components_grp)
@@ -200,11 +200,11 @@ class KanjiDialog(NoteDialog):
         self._createKanjiChip(k)
 
     def _loadKanji(self) -> list[Kanji]:
-        value_sep = settings.general.value_sep
+        value_delim = settings.general.value_delimiter
         s = settings.kanji_notes
 
         def read_note(n):
-            return Kanji(n[s.fields.kanji], strutil.parseList(n[s.fields.meanings], value_sep))
+            return Kanji(n[s.fields.kanji], strutil.parseList(n[s.fields.meanings], value_delim))
 
         return sorted(map(read_note, anki.findNotes(s.deck, s.note_type)))
 
@@ -249,13 +249,14 @@ def openDialog(kanji: Kanji | None = None):
 
     strokes_svg = anki.uploadMedia(f"{note.kanji.char}.svg", note.strokes)
 
-    value_sep = settings.general.value_sep
     s = settings.kanji_notes
+    value_delim = settings.general.value_delimiter
+    line_delim = settings.general.line_delimiter
 
     n = {}
     n[s.fields.kanji] = note.kanji.char.strip()
-    n[s.fields.meanings] = value_sep.join(note.kanji.meanings)
-    n[s.fields.components] = value_sep.join(map(str, note.components))
+    n[s.fields.meanings] = value_delim.join(note.kanji.meanings)
+    n[s.fields.components] = line_delim.join(map(str, note.components))
     n[s.fields.strokes] = f"<img src='{strokes_svg}'>"
 
     if anki.uploadNote(n, s.deck, s.note_type, note.tags):
