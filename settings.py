@@ -14,8 +14,11 @@ class Settings:
     def _set_raw_value(self, key: str, value: str):
         self._settings.setValue(key, value)
 
-    def _get_raw_value(self, key: str, default: str = "") -> str:
+    def _get_raw_value(self, key: str, default: str) -> str:
         return self._settings.value(key, default)
+
+    def get_raw_settings(self) -> QSettings:
+        return self._settings
 
     def get_setting(self, key: str) -> str:
         key = key.lower().replace(" ", "_")
@@ -78,7 +81,7 @@ class KanjiNoteSettings(NoteSettings):
         self.fields = KanjiNoteSettings.FieldSettings(f"{group}/fields")
 
     image_url = property(
-        lambda self: self._get_raw_value("image_url"),
+        lambda self: self._get_raw_value("image_url", ""),
         lambda self, v: self._set_raw_value("image_url", v.strip().rstrip("/") + "/")
     )
 
@@ -156,6 +159,17 @@ class SettingsDialog(QDialog):
         layout.addWidget(btns)
 
         self.setLayout(layout)
+        self._saveLayout(general.get_raw_settings())
+
+    def _saveLayout(self, settings: QSettings):
+        layout = settings.value("layout")
+        if layout:
+            self.restoreGeometry(layout)
+
+        def save_layout():
+            geometry = self.saveGeometry()
+            settings.setValue("layout", geometry)
+        self.finished.connect(save_layout)
 
     def _wrapLayout(self, layout: QLayout) -> QWidget:
         w = QWidget()

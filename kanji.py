@@ -167,6 +167,8 @@ class KanjiDialog(NoteDialog):
             self._kanji_edit.setText(kanji.char)
             self._meaning_edit.setText(kanji.meaning)
 
+        self.saveLayout(settings.kanji_notes.get_raw_settings())
+
     def _loadKanjiSvg(self):
         kanji = self._kanji_edit.text().strip()
         if len(kanji) == 1:

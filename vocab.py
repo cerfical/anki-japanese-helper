@@ -51,6 +51,8 @@ class VocabDialog(NoteDialog):
             self._furigana_edit.setText(vocab.furigana)
             self._meaning_edit.setText(vocab.meaning)
 
+        self.saveLayout(settings.vocab_notes.get_raw_settings())
+
     def getVocabNote(self) -> VocabNote:
         furigana = self._furigana_edit.text()
         add_kanji = self._add_kanji_check.isChecked()

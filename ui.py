@@ -1,4 +1,4 @@
-from PyQt6.QtCore import Qt, pyqtProperty, pyqtSignal
+from PyQt6.QtCore import QSettings, Qt, pyqtProperty, pyqtSignal
 from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFrame, QGroupBox,
                              QHBoxLayout, QLabel, QLineEdit, QListWidget,
                              QPushButton, QScrollArea, QSizePolicy, QSplitter,
@@ -79,6 +79,18 @@ class NoteDialog(QDialog):
 
     def getNoteTags(self) -> list[str]:
         return self._tags
+
+    def saveLayout(self, settings: QSettings):
+        layout = settings.value("layout")
+        if layout:
+            self.restoreGeometry(layout[0])
+            self._contents.restoreState(layout[1])
+
+        def save_layout():
+            geometry = self.saveGeometry()
+            splitter_state = self._contents.saveState()
+            settings.setValue("layout", (geometry, splitter_state))
+        self.finished.connect(save_layout)
 
 
 class SelectionDialog(QDialog):
