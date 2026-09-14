@@ -1,7 +1,6 @@
 import re
 
-from PyQt6.QtWidgets import (QCheckBox, QLineEdit, QPlainTextEdit, QVBoxLayout,
-                             QWidget)
+from PyQt6.QtWidgets import QCheckBox, QLineEdit, QVBoxLayout, QWidget
 
 import anki_japanese_helper.anki as anki
 import anki_japanese_helper.kanji as kanji
@@ -11,13 +10,16 @@ from anki_japanese_helper.ui import NoteDialog
 
 
 class Vocab:
-    def __init__(self, furigana: str, meanings: list[str]):
+    def __init__(self, furigana: str, meaning: str):
         self.furigana = furigana
-        self.meanings = meanings
+
+        value_delim = settings.general.value_delimiter
+        meanings = strutil.parse_list(meaning, value_delim)
+        self.meaning = (value_delim + " ").join(meanings)
 
 
 class VocabNote:
-    def __init__(self, vocab: Vocab,  add_kanji: bool, tags: list[str]):
+    def __init__(self, vocab: Vocab, add_kanji: bool, tags: list[str]):
         self.vocab = vocab
         self.add_kanji = add_kanji
         self.tags = tags
@@ -36,10 +38,9 @@ class VocabDialog(NoteDialog):
         self._furigana_edit.setFocus()
         vbox.addWidget(self._furigana_edit)
 
-        self._meanings_edit = QPlainTextEdit()
-        self._meanings_edit.setPlaceholderText("Meanings")
-        self._meanings_edit.setTabChangesFocus(True)
-        vbox.addWidget(self._meanings_edit)
+        self._meaning_edit = QLineEdit()
+        self._meaning_edit.setPlaceholderText("Meaning")
+        vbox.addWidget(self._meaning_edit)
 
         self._add_kanji_check = QCheckBox()
         self._add_kanji_check.setText("Add Kanji")
@@ -48,14 +49,12 @@ class VocabDialog(NoteDialog):
 
         if vocab:
             self._furigana_edit.setText(vocab.furigana)
-            self._meanings_edit.setPlainText("\n".join(vocab.meanings))
+            self._meaning_edit.setText(vocab.meaning)
 
     def getVocabNote(self) -> VocabNote:
         furigana = self._furigana_edit.text()
-        meanings = strutil.parseList(self._meanings_edit.toPlainText(), "\n")
-
         add_kanji = self._add_kanji_check.isChecked()
-        vocab = Vocab(furigana, meanings)
+        vocab = Vocab(furigana, self._meaning_edit.text())
 
         return VocabNote(vocab, add_kanji, self.getNoteTags())
 
@@ -74,8 +73,8 @@ def openDialog(vocab: Vocab | None = None):
         return
 
     note = dlg.getVocabNote()
-    if not note.vocab.meanings:
-        anki.notify("No meanings specified")
+    if not note.vocab.meaning:
+        anki.notify("No meaning specified")
         return
 
     furigana = normalize_furigana(note.vocab.furigana.strip())
@@ -92,16 +91,14 @@ def openDialog(vocab: Vocab | None = None):
             reading += c
         word += c
 
-    value_delim = settings.general.value_delimiter
-    s = settings.vocab_notes
-
     # Check for duplicate vocabs
+    s = settings.vocab_notes
     if not anki.anyNotes(s.deck, s.note_type, (s.fields.word, word), (s.fields.reading, reading)):
         n = {}
         n[s.fields.word] = word
         n[s.fields.reading] = reading
         n[s.fields.furigana] = furigana
-        n[s.fields.meanings] = value_delim.join(note.vocab.meanings)
+        n[s.fields.meaning] = note.vocab.meaning
 
         if anki.uploadNote(n, s.deck, s.note_type, note.tags):
             anki.notify("Note added")

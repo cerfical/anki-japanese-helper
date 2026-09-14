@@ -57,9 +57,9 @@ class KanjiNoteSettings(NoteSettings):
             lambda self, v: self._set_raw_value("kanji", v)
         )
 
-        meanings = property(
-            lambda self: self._get_raw_value("meanings", "Meanings"),
-            lambda self, v: self._set_raw_value("meanings", v)
+        meaning = property(
+            lambda self: self._get_raw_value("meaning", "Meaning"),
+            lambda self, v: self._set_raw_value("meaning", v)
         )
 
         components = property(
@@ -100,9 +100,9 @@ class VocabNoteSettings(NoteSettings):
             lambda self, v: self._set_raw_value("furigana", v)
         )
 
-        meanings = property(
-            lambda self: self._get_raw_value("meanings", "Meanings"),
-            lambda self, v: self._set_raw_value("meanings", v)
+        meaning = property(
+            lambda self: self._get_raw_value("meaning", "Meaning"),
+            lambda self, v: self._set_raw_value("meaning", v)
         )
 
     def __init__(self, group: str):
@@ -133,7 +133,7 @@ class SettingsDialog(QDialog):
         tabs.addTab(self._wrapLayout(general_layout), "General")
 
         kanji_notes_layout = self._createNoteSettings(
-            ["Kanji", "Meanings", "Components", "Strokes"],
+            ["Kanji", "Meaning", "Components", "Strokes"],
             kanji_notes
         )
 
@@ -144,7 +144,7 @@ class SettingsDialog(QDialog):
         tabs.addTab(self._wrapLayout(kanji_notes_layout), "Kanji Notes")
 
         vocab_notes_layout = self._createNoteSettings(
-            ["Word", "Reading", "Furigana", "Meanings"],
+            ["Word", "Meaning", "Reading", "Furigana"],
             vocab_notes
         )
         tabs.addTab(self._wrapLayout(vocab_notes_layout), "Vocab Notes")

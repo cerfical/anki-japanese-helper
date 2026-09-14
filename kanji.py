@@ -3,8 +3,8 @@ from PyQt6.QtNetwork import (QNetworkAccessManager, QNetworkReply,
                              QNetworkRequest)
 from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtWidgets import (QFileDialog, QGroupBox, QHBoxLayout, QLineEdit,
-                             QPlainTextEdit, QScrollArea, QSizePolicy, QStyle,
-                             QVBoxLayout, QWidget)
+                             QScrollArea, QSizePolicy, QStyle, QVBoxLayout,
+                             QWidget)
 
 import anki_japanese_helper.anki as anki
 import anki_japanese_helper.settings as settings
@@ -23,13 +23,16 @@ NO_IMAGE_SVG = b"""
 
 
 class Kanji:
-    def __init__(self, char: str, meanings: list[str]):
+    def __init__(self, char: str, meaning: str):
         self.char = char
-        self.meanings = meanings
+
+        value_delim = settings.general.value_delimiter
+        self._meanings = strutil.parse_list(meaning, value_delim)
+        self.meaning = (value_delim + " ").join(self._meanings)
 
     def __str__(self):
         # Only show the first meaning if there are multiple
-        return f"{self.meanings[0]} {self.char}"
+        return f"{self._meanings[0]} {self.char}"
 
     def __eq__(self, other):
         return self.char == other.char
@@ -130,10 +133,9 @@ class KanjiDialog(NoteDialog):
         self._kanji_edit.setFocus()
         vbox.addWidget(self._kanji_edit)
 
-        self._meanings_edit = QPlainTextEdit()
-        self._meanings_edit.setPlaceholderText("Meanings")
-        self._meanings_edit.setTabChangesFocus(True)
-        vbox.addWidget(self._meanings_edit)
+        self._meaning_edit = QLineEdit()
+        self._meaning_edit.setPlaceholderText("Meaning")
+        vbox.addWidget(self._meaning_edit)
 
         # Kanji image
         hbox_widget = QWidget()
@@ -163,7 +165,7 @@ class KanjiDialog(NoteDialog):
 
         if kanji:
             self._kanji_edit.setText(kanji.char)
-            self._meanings_edit.setPlainText("\n".join(kanji.meanings))
+            self._meaning_edit.setText(kanji.meaning)
 
     def _loadKanjiSvg(self):
         kanji = self._kanji_edit.text().strip()
@@ -200,12 +202,10 @@ class KanjiDialog(NoteDialog):
         self._createKanjiChip(k)
 
     def _loadKanji(self) -> list[Kanji]:
-        value_delim = settings.general.value_delimiter
         s = settings.kanji_notes
 
         def read_note(n):
-            return Kanji(n[s.fields.kanji], strutil.parseList(n[s.fields.meanings], value_delim))
-
+            return Kanji(n[s.fields.kanji], n[s.fields.meaning])
         return sorted(map(read_note, anki.findNotes(s.deck, s.note_type)))
 
     def _createKanjiChip(self, kanji: Kanji):
@@ -227,8 +227,7 @@ class KanjiDialog(NoteDialog):
             components.append(KanjiComponent(kanji, counter.count))
 
         kanji_char = self._kanji_edit.text()
-        meanings = strutil.parseList(self._meanings_edit.toPlainText(), "\n")
-        kanji = Kanji(kanji_char, meanings)
+        kanji = Kanji(kanji_char, self._meaning_edit.text())
 
         return KanjiNote(kanji, components, self._kanji_svg, self.getNoteTags())
 
@@ -243,19 +242,18 @@ def openDialog(kanji: Kanji | None = None):
         anki.notify("No kanji specified")
         return
 
-    if not note.kanji.meanings:
-        anki.notify("No meanings specified")
+    if not note.kanji.meaning:
+        anki.notify("No meaning specified")
         return
 
     strokes_svg = anki.uploadMedia(f"{note.kanji.char}.svg", note.strokes)
 
     s = settings.kanji_notes
-    value_delim = settings.general.value_delimiter
     line_delim = settings.general.line_delimiter
 
     n = {}
     n[s.fields.kanji] = note.kanji.char.strip()
-    n[s.fields.meanings] = value_delim.join(note.kanji.meanings)
+    n[s.fields.meaning] = note.kanji.meaning
     n[s.fields.components] = line_delim.join(map(str, note.components))
     n[s.fields.strokes] = f"<img src='{strokes_svg}'>"
 
